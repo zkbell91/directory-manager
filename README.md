@@ -1,134 +1,181 @@
 # Directory Manager
 
-A modern desktop application for managing therapist directory profiles across multiple platforms.
+A modern web application for managing therapist directory profiles across multiple platforms with intelligent web scraping and automated profile management.
 
 ## Features
 
-### Current Features
-- **Modern UI**: Clean, professional interface built with CustomTkinter
-- **Database Management**: SQLite database for storing therapist and directory information
+### ✅ Current Features
+- **Modern Web UI**: Clean, Apple-inspired interface built with Flask and Bootstrap 5
+- **Intelligent Web Scraping**: Automated profile discovery across multiple directory sites
+- **Anti-Bot Protection**: Advanced handling of 403 errors and bot detection systems
+- **Batch Search**: Search all directories for all therapists with one click
+- **Profile Status Management**: Track profiles as active, exists_unmanaged, needs_claiming, etc.
+- **Real-time Profile Viewing**: Live profile content comparison and management
+- **Directory-Specific Scrapers**: Custom scraping logic for each directory platform
+- **Database Management**: SQLite database with automated migrations
 - **CSV Import/Export**: Import existing spreadsheet data and export back to CSV format
 - **Coverage Matrix**: Visual representation of therapist coverage across directories
-- **Profile Management**: Track therapist profiles across multiple directory sites
+- **Google Forms Integration**: Import therapist data from Google Forms responses
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
 
-### Planned Features
-- **Automated Profile Updates**: Automatically update therapist profiles across directories
-- **AI Content Generation**: Generate profile content using therapist information and writing styles
-- **Profile Discovery**: Search for existing therapist profiles on directory sites
-- **Analytics Dashboard**: Track directory performance and referral sources
-- **Scheduling System**: Automated reminders for profile updates
-- **Browser Automation**: Direct integration with directory websites
+### 🚀 Advanced Features
+- **Psychology Today Integration**: Sophisticated requests-based scraper with deduplication
+- **Zencare Integration**: Custom scraper with anti-bot protection handling
+- **TherapyDen Integration**: Directory-specific search and profile extraction
+- **Profile Confirmation Workflow**: Streamlined process for confirming and managing profiles
+- **Error Handling**: Comprehensive error handling for network issues and blocked requests
+- **Modern Styling**: Apple-inspired color palette with subtle grays and minimal accents
 
 ## Installation
 
-1. **Create Virtual Environment**:
+1. **Clone the Repository**:
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate
+   git clone https://github.com/zkbell91/directory-manager.git
+   cd directory-manager
    ```
 
-2. **Install Python Dependencies**:
+2. **Create Virtual Environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install Dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run the Web Application** (Recommended):
+4. **Run the Application**:
    ```bash
    ./web_launch.sh
    ```
-   Then open your browser and go to: http://localhost:5000
-
-4. **Alternative: Desktop Application**:
+   Or manually:
    ```bash
-   ./launch.sh
+   python web_app.py
    ```
-   (Note: Requires Tkinter support on your system)
+
+5. **Open in Browser**:
+   Navigate to: http://localhost:5002
 
 ## Usage
 
-### Importing Existing Data
+### Dashboard Overview
+- **Metric Cards**: View total therapists, directories, profiles, and coverage percentage
+- **Coverage Matrix**: Interactive grid showing therapist-directory combinations
+- **Batch Search**: Search all directories for all therapists with one click
+- **Smart Search**: Intelligent profile discovery using NPI, license numbers, and location
 
-1. Go to the **Import/Export** tab
-2. Click **Import Directory Details CSV** to import your existing spreadsheet
-3. Click **Import Directory Grid CSV** to import the grid format
-4. The application will automatically create therapists, directories, and profiles
+### Profile Management
+1. **Search for Profiles**: Use the "Search for Existing Profile" button on the dashboard
+2. **Confirm Matches**: Review search results and confirm correct profiles
+3. **Status Management**: Mark profiles as "We Manage This", "Therapist-Managed", or "Needs Claiming"
+4. **Batch Processing**: Handle multiple search results without closing the modal
 
-### Managing Therapists
+### Directory Management
+1. **View Directories**: Click on directory rows to view detailed information
+2. **Configure Scrapers**: Set up custom scraping logic for each directory
+3. **Test Scrapers**: Test scraper configurations before deploying
+4. **Monitor Performance**: Track scraper success rates and error handling
 
-1. Go to the **Therapists** tab
-2. Use the toolbar to add, edit, or delete therapists
-3. View therapist information and profile counts
+### Therapist Management
+1. **View Therapist Details**: Click on therapist names to see comprehensive profiles
+2. **Profile Overview**: See all directory profiles for each therapist
+3. **Contact Information**: Manage therapist contact details and credentials
+4. **Specialty Tracking**: Track therapist specialties and populations served
 
-### Managing Directories
+## Supported Directory Sites
 
-1. Go to the **Directories** tab
-2. Add new directory sites with their requirements
-3. Track which directories are free vs. premium
+The application currently supports intelligent scraping for:
 
-### Managing Profiles
+- **Psychology Today** - Sophisticated requests-based scraper with deduplication
+- **Zencare** - Custom scraper with anti-bot protection handling  
+- **TherapyDen** - Directory-specific search and profile extraction
+- **Headway** - Generic scraper with error handling
+- **Open Path Collective** - Generic scraper implementation
+- **Therapy Route** - Generic scraper implementation
+- **ShareCare** - Generic scraper implementation
+- **ZocDoc** - Generic scraper implementation
+- **CareDash** - Generic scraper implementation
+- **Health Grades** - Generic scraper implementation
+- **eHealth Scores** - Generic scraper implementation
+- **HealthLine** - Generic scraper implementation
+- **Bark** - Generic scraper implementation
+- **Alignable** - Generic scraper implementation
+- **IOCDF** - Generic scraper implementation
+- **PSI Directory** - Generic scraper implementation
+- **Trauma Therapist Network** - Generic scraper implementation
+- **Being Seen** - Generic scraper implementation
+- **Jax Therapy Network** - Generic scraper implementation
 
-1. Go to the **Profiles** tab
-2. View all therapist-directory combinations
-3. Click **Open Profile** to view profiles in your browser
-4. Update profile information as needed
+## Technical Architecture
 
-### Dashboard
+### Backend
+- **Flask**: Web framework with RESTful API endpoints
+- **SQLite**: Local database with automated migrations
+- **Requests/BeautifulSoup**: Web scraping with anti-bot protection
+- **Selenium**: Browser automation for JavaScript-heavy sites
+- **Undetected ChromeDriver**: Advanced bot detection bypass
 
-The dashboard provides an overview of:
-- Total therapists, directories, and profiles
-- Coverage percentage across all combinations
-- Coverage matrix showing which therapists are on which directories
-- Recent activity log
+### Frontend
+- **Bootstrap 5**: Responsive UI framework
+- **JavaScript/jQuery**: Interactive components and API calls
+- **Font Awesome**: Professional iconography
+- **Modern CSS**: Apple-inspired design system with CSS custom properties
 
-## Database Schema
+### Database Schema
+- **therapists**: Therapist information, credentials, specialties, NPI numbers
+- **directories**: Directory sites with scraper configurations and requirements
+- **therapist_profiles**: Profile status, URLs, and management information
+- **automation_tasks**: Scheduled tasks and automation settings
 
-The application uses SQLite with the following main tables:
+## API Endpoints
 
-- **therapists**: Therapist information, credentials, specialties
-- **directories**: Directory sites with requirements and ranking factors
-- **therapist_profiles**: Junction table linking therapists to directories
-- **automation_tasks**: Scheduled automation tasks
-- **analytics**: Performance metrics and analytics data
+- `GET /` - Dashboard overview
+- `GET /therapists` - Therapist management
+- `GET /directories` - Directory management  
+- `GET /profiles` - Profile management
+- `POST /api/auto-search-profile` - Intelligent profile search
+- `POST /api/batch-search` - Batch search across directories
+- `POST /api/confirm-profile` - Confirm profile matches
+- `GET /api/directory/<id>` - Directory details
+- `POST /api/directory/<id>/scraper` - Configure directory scraper
 
-## Directory Sites Supported
+## Development
 
-Currently tracks profiles for:
-- Psychology Today
-- Zencare
-- TherapyDen
-- Headway
-- Open Path Collective
-- Therapy Route
-- ShareCare
-- ZocDoc
-- CareDash
-- Health Grades
-- eHealth Scores
-- HealthLine
-- Bark
-- Alignable
-- IOCDF
-- PSI Directory
-- Trauma Therapist Network
-- Being Seen
-- Jax Therapy Network
+### Project Structure
+```
+directory-manager/
+├── web_app.py              # Main Flask application
+├── database.py             # Database management and migrations
+├── profile_scraper.py      # Web scraping logic
+├── human_like_scraper.py   # Advanced bot detection bypass
+├── undetected_scraper.py   # Undetected ChromeDriver integration
+├── google_form_importer.py # Google Forms data import
+├── csv_importer.py         # CSV import/export functionality
+├── templates/              # HTML templates
+├── requirements.txt        # Python dependencies
+└── web_launch.sh          # Application launcher
+```
 
-## Future Enhancements
+### Adding New Directory Support
+1. Add directory to database with scraper configuration
+2. Implement directory-specific search method in `profile_scraper.py`
+3. Add error handling for directory-specific issues
+4. Test scraper with various therapist profiles
+5. Update UI to show directory-specific status
 
-- **Browser Automation**: Direct integration with directory websites
-- **AI Integration**: ChatGPT API integration for content generation
-- **Advanced Analytics**: Referral tracking and ROI analysis
-- **Multi-user Support**: Different access levels for team members
-- **Cloud Sync**: Optional cloud backup and synchronization
-- **API Integration**: Direct API connections to directory sites
+## Contributing
 
-## Technical Details
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-- **Framework**: Python with CustomTkinter for modern UI
-- **Database**: SQLite for local data storage
-- **Import/Export**: Pandas for CSV processing
-- **Future**: Selenium for browser automation, OpenAI API for AI features
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
-For questions or issues, please refer to the application's built-in help system or contact the development team.
+For questions, issues, or feature requests, please open an issue on GitHub or contact the development team.
