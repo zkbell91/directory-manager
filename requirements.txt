@@ -1,0 +1,14 @@
+pandas
+requests
+selenium
+beautifulsoup4
+openai
+pillow
+flask
+lxml
+webdriver-manager
+pyautogui
+pygetwindow
+mouse
+keyboard
+undetected-chromedriver

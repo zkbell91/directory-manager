@@ -1,0 +1,22 @@
+[
+  {
+    "fileName": "main-overview.mdc",
+    "description": "Complete system overview documenting the core functionality of therapist profile management, data import/export systems, and profile scraping architecture"
+  },
+  {
+    "fileName": "data-models.mdc",
+    "description": "Detailed documentation of the SQLite database schema, including therapist, directory, profile, and junction table structures, along with their relationships and constraints"
+  },
+  {
+    "fileName": "import-export-flows.mdc",
+    "description": "Comprehensive documentation of data import/export processes, including CSV import/export logic, Google Form data integration, and staff data import mechanisms"
+  },
+  {
+    "fileName": "scraping-algorithms.mdc",
+    "description": "Detailed documentation of profile scraping algorithms for different directory sites, including data extraction patterns, comparison logic, and error handling strategies"
+  },
+  {
+    "fileName": "data-flow-architecture.mdc",
+    "description": "Documentation of data flow between components, including how data moves between importers, database, scrapers, and comparison functions"
+  }
+]

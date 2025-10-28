@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Import/Export - Directory Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Import/Export</h1>
+</div>
+
+<div class="row">
+    <!-- Import Section -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-import me-2"></i>Import Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Import your existing CSV files to populate the database.</p>
+                
+                <!-- Import Directory Details -->
+                <div class="mb-4">
+                    <h6>Import Directory Details CSV</h6>
+                    <p class="small text-muted">Import the detailed therapist-directory mapping from your spreadsheet.</p>
+                    <form action="{{ url_for('import_details') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" name="file" accept=".csv" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Import Details
+                        </button>
+                    </form>
+                </div>
+                
+                <hr>
+                
+                <!-- Import Directory Grid -->
+                <div class="mb-4">
+                    <h6>Import Directory Grid CSV</h6>
+                    <p class="small text-muted">Import the grid format showing therapists across directories.</p>
+                    <form action="{{ url_for('import_grid') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" name="file" accept=".csv" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Import Grid
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Section -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-export me-2"></i>Export Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Export your data back to CSV format for spreadsheet compatibility.</p>
+                
+                <!-- Export Directory Details -->
+                <div class="mb-4">
+                    <h6>Export Directory Details CSV</h6>
+                    <p class="small text-muted">Export data in the detailed therapist-directory format.</p>
+                    <a href="{{ url_for('export_details') }}" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>Export Details
+                    </a>
+                </div>
+                
+                <hr>
+                
+                <!-- Export Directory Grid -->
+                <div class="mb-4">
+                    <h6>Export Directory Grid CSV</h6>
+                    <p class="small text-muted">Export data in the grid format for easy viewing.</p>
+                    <a href="{{ url_for('export_grid') }}" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>Export Grid
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Import Instructions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Directory Details Format</h6>
+                        <p class="small">Your CSV should have these columns:</p>
+                        <ul class="small">
+                            <li><strong>Therapist</strong> - Therapist name</li>
+                            <li><strong>Directory</strong> - Directory site name</li>
+                            <li><strong>Directory URL</strong> - Profile URL</li>
+                            <li><strong>Username</strong> - Login username</li>
+                            <li><strong>Password</strong> - Login password</li>
+                            <li><strong>Notes</strong> - Additional notes</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Directory Grid Format</h6>
+                        <p class="small">Your CSV should have:</p>
+                        <ul class="small">
+                            <li><strong>Directory</strong> column with directory names</li>
+                            <li><strong>Therapist name columns</strong> with profile URLs</li>
+                            <li>Empty cells for missing profiles</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

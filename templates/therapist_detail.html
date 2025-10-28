@@ -1,0 +1,1313 @@
+{% extends "base.html" %}
+
+{% block title %}{{ therapist.name }} - Therapist Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('therapists') }}">Therapists</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ therapist.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Therapist Header with Photo -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card therapist-header-card">
+                <div class="card-body text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <div class="therapist-photo-container">
+                                {% if therapist.primary_photo %}
+                                <img src="{{ therapist.primary_photo }}" alt="{{ therapist.name }}" class="therapist-photo">
+                                {% else %}
+                                <div class="therapist-avatar-large">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-10">
+                            <h1 class="h2 mb-3 fw-bold">{{ therapist.name }}</h1>
+                            {% if therapist.credentials %}
+                            <p class="mb-3 fs-5 opacity-75">{{ therapist.credentials }}</p>
+                            {% endif %}
+                            <div class="d-flex flex-wrap gap-3">
+                                <span class="badge bg-white bg-opacity-20 text-white border-0 px-3 py-2">
+                                    <i class="fas fa-id-card me-2"></i>
+                                    <span class="fw-medium">{{ active_profiles }} Active Profiles</span>
+                                </span>
+                                <span class="badge bg-white bg-opacity-20 text-white border-0 px-3 py-2">
+                                    <i class="fas fa-percentage me-2"></i>
+                                    <span class="fw-medium">{{ "%.1f"|format(coverage_percentage) }}% Coverage</span>
+                                </span>
+                                <span class="badge bg-white bg-opacity-20 text-white border-0 px-3 py-2">
+                                    <i class="fas fa-eye me-2"></i>
+                                    <span class="fw-medium">{{ total_views }} Total Views</span>
+                                </span>
+                                <span class="badge bg-white bg-opacity-20 text-white border-0 px-3 py-2">
+                                    <i class="fas fa-phone me-2"></i>
+                                    <span class="fw-medium">{{ total_contacts }} Contacts</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Essential Information Cards -->
+    <div class="row mb-4">
+        <!-- Contact Information -->
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-light text-dark">
+                    <h5 class="mb-0"><i class="fas fa-address-card me-2"></i>Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    {% if therapist.email %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-envelope text-muted me-2"></i>
+                        <a href="mailto:{{ therapist.email }}">{{ therapist.email }}</a>
+                    </div>
+                    {% endif %}
+                    {% if therapist.phone %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-phone text-muted me-2"></i>
+                        <a href="tel:{{ therapist.phone }}">{{ therapist.phone }}</a>
+                    </div>
+                    {% endif %}
+                    {% if therapist.npi %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-id-badge text-muted me-2"></i>
+                        <strong>NPI:</strong> {{ therapist.npi }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Licenses -->
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-certificate me-2"></i>Professional Licenses</h5>
+                </div>
+                <div class="card-body">
+                    {% if therapist.license_numbers %}
+                    {% for state, number in therapist.license_numbers.items() %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                        <strong>{{ state }}:</strong> {{ number }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% if therapist.blue_numbers %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-shield-alt text-muted me-2"></i>
+                        <strong>FL Blue:</strong> 
+                        {% for number in therapist.blue_numbers %}
+                        <span class="badge bg-info me-1">{{ number }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if therapist.ssn_last_four %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-lock text-muted me-2"></i>
+                        <strong>SSN Last 4:</strong> ****{{ therapist.ssn_last_four }}
+                    </div>
+                    {% endif %}
+                    {% if therapist.medicaid_id %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-heart text-muted me-2"></i>
+                        <strong>Medicaid ID:</strong> {{ therapist.medicaid_id }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Specialties & Approach -->
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Specialties & Approach</h5>
+                </div>
+                <div class="card-body">
+                    {% if therapist.specialties %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-star text-muted me-2"></i>
+                        <strong>Specialties:</strong>
+                        <div class="mt-1">
+                            {% for specialty in therapist.specialties %}
+                            <span class="badge bg-secondary me-1 mb-1">{{ specialty }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if therapist.populations %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-users text-muted me-2"></i>
+                        <strong>Populations:</strong>
+                        <div class="mt-1">
+                            {% for population in therapist.populations %}
+                            <span class="badge bg-secondary me-1 mb-1">{{ population }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if therapist.therapy_styles %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-heart text-muted me-2"></i>
+                        <strong>Approaches:</strong>
+                        <div class="mt-1">
+                            {% for style in therapist.therapy_styles %}
+                            <span class="badge bg-success me-1 mb-1">{{ style }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Information Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="therapistTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                                <i class="fas fa-chart-pie me-2"></i>Overview
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="profiles-tab" data-bs-toggle="tab" data-bs-target="#profiles" type="button" role="tab">
+                                <i class="fas fa-id-card me-2"></i>Directory Profiles
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                                <i class="fas fa-chart-line me-2"></i>Analytics
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content" type="button" role="tab">
+                                <i class="fas fa-file-alt me-2"></i>Content & Style
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab">
+                                <i class="fas fa-images me-2"></i>Media Gallery
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="licensing-tab" data-bs-toggle="tab" data-bs-target="#licensing" type="button" role="tab">
+                                <i class="fas fa-certificate me-2"></i>Licensing
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="therapistTabContent">
+                        <!-- Overview Tab -->
+                        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Profile Coverage</h5>
+                                    <div class="coverage-chart">
+                                        <canvas id="coverageChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Performance Metrics</h5>
+                                    <div class="row">
+                                        <div class="col-6 mb-3">
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ total_views }}</div>
+                                                <div class="metric-label">Total Views</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ total_contacts }}</div>
+                                                <div class="metric-label">Contact Requests</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ active_profiles }}</div>
+                                                <div class="metric-label">Active Profiles</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ "%.1f"|format(coverage_percentage) }}%</div>
+                                                <div class="metric-label">Coverage</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Directory Profiles Tab -->
+                        <div class="tab-pane fade" id="profiles" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Directory Profiles</h5>
+                                <button class="btn btn-primary btn-sm" onclick="addProfile({{ therapist.id }})">
+                                    <i class="fas fa-plus me-2"></i>Add Profile
+                                </button>
+                            </div>
+                            
+                            <div class="row">
+                                {% for profile in profiles %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="profile-card" onclick="viewProfileDetails({{ profile.id }})" style="cursor: pointer;">
+                                        <div class="profile-header">
+                                            <h6 class="profile-title">{{ profile.directory_name }}</h6>
+                                            <span class="profile-status status-{{ profile.status }}">
+                                                {{ profile.status.title() }}
+                                            </span>
+                                        </div>
+                                        <div class="profile-body">
+                                            {% if profile.profile_url %}
+                                            <p class="profile-url">
+                                                <i class="fas fa-link me-1"></i>
+                                                <a href="{{ profile.profile_url }}" target="_blank" onclick="event.stopPropagation();">View Profile</a>
+                                            </p>
+                                            {% endif %}
+                                            <div class="profile-stats">
+                                                <div class="stat">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span>{{ profile.profile_views or 0 }} views</span>
+                                                </div>
+                                                <div class="stat">
+                                                    <i class="fas fa-phone"></i>
+                                                    <span>{{ profile.contact_requests or 0 }} contacts</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="profile-actions" onclick="event.stopPropagation();">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editProfile({{ profile.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProfile({{ profile.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Analytics Tab -->
+                        <div class="tab-pane fade" id="analytics" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Profile Performance</h5>
+                                    <canvas id="performanceChart" width="400" height="300"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Directory Coverage</h5>
+                                    <div class="coverage-list">
+                                        {% for directory in all_directories %}
+                                        <div class="coverage-item">
+                                            <div class="coverage-directory">{{ directory.name }}</div>
+                                            <div class="coverage-status">
+                                                {% set has_profile = profiles | selectattr('directory_id', 'equalto', directory.id) | list | length > 0 %}
+                                                {% if has_profile %}
+                                                <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Missing</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content & Style Tab -->
+                        <div class="tab-pane fade" id="content" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Bio & Introduction</h5>
+                                    {% if therapist.bio %}
+                                    <div class="bio-section">
+                                        <p>{{ therapist.bio }}</p>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        No bio available. Add a bio to help with profile creation.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Writing Style</h5>
+                                    {% if therapist.writing_style %}
+                                    <div class="writing-style-section">
+                                        <p>{{ therapist.writing_style }}</p>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        No writing style profile available. This helps AI generate content in your voice.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Media Gallery Tab -->
+                        <div class="tab-pane fade" id="media" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Media Gallery</h5>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm" onclick="uploadMedia('photo')">
+                                        <i class="fas fa-camera me-2"></i>Upload Photo
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="uploadMedia('video')">
+                                        <i class="fas fa-video me-2"></i>Upload Video
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="row" id="mediaGallery">
+                                <!-- Photos Section -->
+                                <div class="col-12 mb-4">
+                                    <h6 class="text-muted mb-3">Photos</h6>
+                                    <div class="row" id="photosGrid">
+                                        <div class="col-md-3 col-sm-4 col-6 mb-3">
+                                            <div class="media-card photo-card">
+                                                <div class="media-preview">
+                                                    <i class="fas fa-camera fa-3x text-muted"></i>
+                                                </div>
+                                                <div class="media-info">
+                                                    <small class="text-muted">No photos uploaded</small>
+                                                </div>
+                                                <div class="media-actions">
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="uploadMedia('photo')">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Videos Section -->
+                                <div class="col-12">
+                                    <h6 class="text-muted mb-3">Videos</h6>
+                                    <div class="row" id="videosGrid">
+                                        <div class="col-md-3 col-sm-4 col-6 mb-3">
+                                            <div class="media-card video-card">
+                                                <div class="media-preview">
+                                                    <i class="fas fa-video fa-3x text-muted"></i>
+                                                </div>
+                                                <div class="media-info">
+                                                    <small class="text-muted">No videos uploaded</small>
+                                                </div>
+                                                <div class="media-actions">
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="uploadMedia('video')">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Licensing Tab -->
+                        <div class="tab-pane fade" id="licensing" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Professional Licenses</h5>
+                                    <div class="licensing-section">
+                                        {% if therapist.npi %}
+                                        <div class="license-item mb-3">
+                                            <label class="license-label">NPI Number</label>
+                                            <p class="license-value">{{ therapist.npi }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.license_numbers %}
+                                        <div class="license-item mb-3">
+                                            <label class="license-label">License Numbers</label>
+                                            <div class="license-numbers">
+                                                {% for state, number in therapist.license_numbers.items() %}
+                                                <span class="badge bg-secondary me-2 mb-2">{{ state }}: {{ number }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.blue_numbers %}
+                                        <div class="license-item mb-3">
+                                            <label class="license-label">FL Blue Numbers</label>
+                                            <div class="blue-numbers">
+                                                {% for number in therapist.blue_numbers %}
+                                                <span class="badge bg-info me-2 mb-2">{{ number }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.ssn_last_four %}
+                                        <div class="license-item mb-3">
+                                            <label class="license-label">SSN Last 4</label>
+                                            <p class="license-value">****{{ therapist.ssn_last_four }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.medicaid_id %}
+                                        <div class="license-item mb-3">
+                                            <label class="license-label">Medicaid ID</label>
+                                            <p class="license-value">{{ therapist.medicaid_id }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Google Form Integration</h5>
+                                    {% if therapist.google_form_url %}
+                                    <div class="google-form-section">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-link me-2"></i>
+                                            <strong>Google Form Responses:</strong>
+                                            <a href="{{ therapist.google_form_url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                                View Responses
+                                            </a>
+                                        </div>
+                                        <p class="text-muted">This form contains detailed information about the therapist's approach, specialties, and writing style that will be used for AI-generated profile content.</p>
+                                    </div>
+                                    {% else %}
+                                    <div class="google-form-section">
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>No Google Form Linked</strong>
+                                        </div>
+                                        <p class="text-muted">Link a Google Form to access detailed therapist information for AI content generation.</p>
+                                        <button class="btn btn-primary btn-sm" onclick="linkGoogleForm({{ therapist.id }})">
+                                            <i class="fas fa-link me-2"></i>Link Google Form
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Rich Form Data Display -->
+                                    <div class="form-data-section mt-4">
+                                        <h6 class="text-muted mb-3">Form Response Data</h6>
+                                        
+                                        <!-- Profile Questions Data -->
+                                        {% if therapist.personal_introduction %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Personal Introduction</label>
+                                            <p class="form-data-value">{{ therapist.personal_introduction }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.therapeutic_approach %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Therapeutic Approach</label>
+                                            <p class="form-data-value">{{ therapist.therapeutic_approach }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.career_motivation %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Career Motivation</label>
+                                            <p class="form-data-value">{{ therapist.career_motivation }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.guiding_principles %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Guiding Principles</label>
+                                            <p class="form-data-value">{{ therapist.guiding_principles }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.target_population %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Target Population</label>
+                                            <p class="form-data-value">{{ therapist.target_population }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.work_rewards %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">What's Most Rewarding</label>
+                                            <p class="form-data-value">{{ therapist.work_rewards }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.personal_interests %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Personal Interests</label>
+                                            <p class="form-data-value">{{ therapist.personal_interests }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.book_recommendations %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Book Recommendations</label>
+                                            <div class="book-recommendations">
+                                                {% for book in therapist.book_recommendations %}
+                                                <span class="badge bg-secondary me-2 mb-2">{{ book }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.specialty_areas %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Top Specialty Areas</label>
+                                            <div class="specialty-areas">
+                                                {% for specialty in therapist.specialty_areas %}
+                                                <span class="badge bg-secondary me-2 mb-2">{{ specialty }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.session_structure %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Session Structure</label>
+                                            <p class="form-data-value">{{ therapist.session_structure }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.homework_approach %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Homework Approach</label>
+                                            <p class="form-data-value">{{ therapist.homework_approach }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.progress_tracking %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Progress Tracking</label>
+                                            <p class="form-data-value">{{ therapist.progress_tracking }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.treatment_duration %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Treatment Duration</label>
+                                            <p class="form-data-value">{{ therapist.treatment_duration }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.preparation_guidance %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Preparation Guidance</label>
+                                            <p class="form-data-value">{{ therapist.preparation_guidance }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.therapy_philosophy %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Therapy Philosophy</label>
+                                            <p class="form-data-value">{{ therapist.therapy_philosophy }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.ideal_client %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Ideal Client</label>
+                                            <p class="form-data-value">{{ therapist.ideal_client }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.treatment_modalities %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Treatment Modalities</label>
+                                            <div class="treatment-modalities">
+                                                {% for modality in therapist.treatment_modalities %}
+                                                <span class="badge bg-info me-2 mb-2">{{ modality }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.expertise_areas %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Areas of Expertise</label>
+                                            <div class="expertise-areas">
+                                                {% for area in therapist.expertise_areas %}
+                                                <span class="badge bg-success me-2 mb-2">{{ area }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.ocd_subtypes %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">OCD Subtypes</label>
+                                            <div class="ocd-subtypes">
+                                                {% for subtype in therapist.ocd_subtypes %}
+                                                <span class="badge bg-warning me-2 mb-2">{{ subtype }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.therapy_style %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Therapy Style</label>
+                                            <p class="form-data-value">{{ therapist.therapy_style }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.client_feedback %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Client Feedback</label>
+                                            <p class="form-data-value">{{ therapist.client_feedback }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if therapist.professional_message %}
+                                        <div class="form-data-item mb-3">
+                                            <label class="form-data-label">Professional Message</label>
+                                            <p class="form-data-value">{{ therapist.professional_message }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <h5 class="mb-3 mt-4">AI Content Generation</h5>
+                                    <div class="ai-content-section">
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-outline-primary" onclick="generateProfileContent({{ therapist.id }})">
+                                                <i class="fas fa-robot me-2"></i>Generate Profile Content
+                                            </button>
+                                            <button class="btn btn-outline-secondary" onclick="updateWritingStyle({{ therapist.id }})">
+                                                <i class="fas fa-edit me-2"></i>Update Writing Style
+                                            </button>
+                                        </div>
+                                        <small class="text-muted mt-2 d-block">
+                                            Use AI to generate directory-specific profile content based on therapist information and Google Form responses.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Therapist Header Styles */
+.therapist-header-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.therapist-photo-container {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.1);
+}
+
+.therapist-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.therapist-avatar-large {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: rgba(255,255,255,0.8);
+}
+
+/* Information Cards */
+.info-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.info-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Profile Cards */
+.profile-card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.profile-header {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.profile-title {
+    margin: 0;
+    font-weight: 600;
+    color: #495057;
+}
+
+.profile-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.profile-body {
+    padding: 1rem;
+}
+
+.profile-url {
+    margin-bottom: 0.75rem;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.profile-actions {
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Metric Cards */
+.metric-card {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #007bff;
+    margin-bottom: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Coverage List */
+.coverage-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.coverage-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.coverage-item:last-child {
+    border-bottom: none;
+}
+
+.coverage-directory {
+    font-weight: 500;
+    color: #495057;
+}
+
+.coverage-status {
+    font-size: 0.875rem;
+}
+
+/* Media Gallery Styles */
+.media-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.media-card:hover {
+    border-color: #007bff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.media-preview {
+    height: 150px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.media-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-info {
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.media-actions {
+    padding: 0.5rem;
+    text-align: center;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.photo-card .media-preview {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.video-card .media-preview {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+/* Licensing Styles */
+.licensing-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+}
+
+.license-item {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1rem;
+}
+
+.license-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.license-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.license-value {
+    margin: 0;
+    font-size: 1rem;
+    font-family: 'Courier New', monospace;
+}
+
+.license-numbers, .blue-numbers {
+    margin-top: 0.5rem;
+}
+
+.google-form-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
+}
+
+.ai-content-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #28a745;
+}
+
+/* Form Data Display Styles */
+.form-data-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #6f42c1;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.form-data-item {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1rem;
+}
+
+.form-data-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.form-data-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+    .form-data-value {
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: #6c757d;
+    }
+
+    /* Clickable Profile Cards */
+    .profile-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+    .profile-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-color: #007bff;
+    }
+
+    .profile-card:active {
+        transform: translateY(0);
+    }
+
+.book-recommendations,
+.specialty-areas,
+.treatment-modalities,
+.expertise-areas,
+.ocd-subtypes {
+    margin-top: 0.5rem;
+}
+
+.book-recommendations .badge,
+.specialty-areas .badge,
+.treatment-modalities .badge,
+.expertise-areas .badge,
+.ocd-subtypes .badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+}
+
+.book-recommendations .badge:hover,
+.specialty-areas .badge:hover,
+.treatment-modalities .badge:hover,
+.expertise-areas .badge:hover,
+.ocd-subtypes .badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .therapist-photo-container {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .therapist-avatar-large {
+        font-size: 2rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    initCoverageChart();
+    initPerformanceChart();
+});
+
+function initCoverageChart() {
+    const ctx = document.getElementById('coverageChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active Profiles', 'Missing Profiles'],
+            datasets: [{
+                data: [{{ active_profiles }}, {{ total_directories - active_profiles }}],
+                backgroundColor: ['#28a745', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function initPerformanceChart() {
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
+    
+    const profileData = {{ profile_performance | tojson }};
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: profileData.map(p => p.directory),
+            datasets: [{
+                label: 'Views',
+                data: profileData.map(p => p.views),
+                backgroundColor: '#007bff'
+            }, {
+                label: 'Contacts',
+                data: profileData.map(p => p.contacts),
+                backgroundColor: '#28a745'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function editTherapist(id) {
+    // Implement therapist editing
+    alert('Edit therapist functionality coming soon!');
+}
+
+function addProfile(therapistId) {
+    // Implement profile addition
+    alert('Add profile functionality coming soon!');
+}
+
+function editProfile(id) {
+    // Implement profile editing
+    alert('Edit profile functionality coming soon!');
+}
+
+function deleteProfile(id) {
+    if (confirm('Are you sure you want to delete this profile?')) {
+        fetch(`/api/profile/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert('Profile deleted successfully');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting profile');
+        });
+    }
+}
+
+function uploadMedia(type) {
+    // Create file input for media upload
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = type === 'photo' ? 'image/*' : 'video/*';
+    input.multiple = true;
+    
+    input.onchange = function(e) {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            uploadFile(file, type);
+        });
+    };
+    
+    input.click();
+}
+
+function uploadFile(file, type) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+    formData.append('therapist_id', {{ therapist.id }});
+    
+    fetch('/api/upload-media', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Media uploaded successfully');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error uploading media');
+    });
+}
+
+function linkGoogleForm(therapistId) {
+    const url = prompt('Enter Google Form URL:');
+    if (url) {
+        fetch(`/api/therapist/${therapistId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                google_form_url: url
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert('Google Form linked successfully');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error linking Google Form');
+        });
+    }
+}
+
+function generateProfileContent(therapistId) {
+    if (confirm('Generate AI content for all directory profiles?')) {
+        fetch(`/api/generate-content/${therapistId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert('AI content generation initiated! This may take a few minutes.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating AI content');
+        });
+    }
+}
+
+function updateWritingStyle(therapistId) {
+    const style = prompt('Enter or update writing style description:');
+    if (style) {
+        fetch(`/api/therapist/${therapistId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                writing_style: style
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert('Writing style updated successfully');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating writing style');
+        });
+    }
+}
+
+function viewProfileDetails(profileId) {
+    // Navigate to profile viewer page
+    window.location.href = `/profile/${profileId}`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,959 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile.therapist_name }} - {{ profile.directory_name }} Profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('profiles') }}">Profiles</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ profile.therapist_name }} - {{ profile.directory_name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Profile Header -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card profile-header-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="h2 mb-3 fw-bold text-primary">{{ profile.therapist_name }}</h1>
+                            <p class="text-muted mb-3 fs-5">{{ profile.directory_name }} Profile</p>
+                            <div class="d-flex gap-3 mb-4">
+                                <span class="badge bg-secondary px-3 py-2">{{ profile.status.title() }}</span>
+                                {% if profile.profile_views %}
+                                <span class="badge bg-info px-3 py-2">{{ profile.profile_views }} Views</span>
+                                {% endif %}
+                                {% if profile.contact_requests %}
+                                <span class="badge bg-success px-3 py-2">{{ profile.contact_requests }} Contacts</span>
+                                {% endif %}
+                            </div>
+                            {% if profile.profile_url %}
+                            <a href="{{ profile.profile_url }}" target="_blank" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-external-link-alt me-2"></i>View Live Profile
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group-vertical d-grid gap-2">
+                                <button class="btn btn-primary btn-lg" onclick="scrapeProfile()">
+                                    <i class="fas fa-download me-2"></i>Scrape Live Content
+                                </button>
+                                <button class="btn btn-outline-primary btn-lg" onclick="compareProfile()">
+                                    <i class="fas fa-balance-scale me-2"></i>Compare
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="live-content-tab" data-bs-toggle="tab" data-bs-target="#live-content" type="button" role="tab">
+                                <i class="fas fa-globe me-2"></i>Live Content
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="stored-data-tab" data-bs-toggle="tab" data-bs-target="#stored-data" type="button" role="tab">
+                                <i class="fas fa-database me-2"></i>Stored Data
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" data-bs-target="#comparison" type="button" role="tab">
+                                <i class="fas fa-balance-scale me-2"></i>Comparison
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                                <i class="fas fa-chart-line me-2"></i>Analytics
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="profileTabContent">
+                        <!-- Live Content Tab -->
+                        <div class="tab-pane fade show active" id="live-content" role="tabpanel">
+                            <div id="liveContentArea">
+                                <div class="text-center py-5">
+                                    <i class="fas fa-globe fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No live content scraped yet</h5>
+                                    <p class="text-muted">Click "Scrape Live Content" to pull the current profile data from the directory site.</p>
+                                    <button class="btn btn-primary" onclick="scrapeProfile()">
+                                        <i class="fas fa-download me-2"></i>Scrape Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stored Data Tab -->
+                        <div class="tab-pane fade" id="stored-data" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Profile Information</h5>
+                                    <div class="info-section">
+                                        <div class="info-item">
+                                            <label>Status:</label>
+                                            <span class="badge bg-secondary">{{ profile.status.title() }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Last Updated:</label>
+                                            <span>{{ profile.last_updated or 'Never' }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Last Checked:</label>
+                                            <span>{{ profile.last_checked or 'Never' }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Profile Views:</label>
+                                            <span>{{ profile.profile_views or 0 }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Contact Requests:</label>
+                                            <span>{{ profile.contact_requests or 0 }}</span>
+                                        </div>
+                                        {% if profile.ranking_position %}
+                                        <div class="info-item">
+                                            <label>Ranking Position:</label>
+                                            <span>#{{ profile.ranking_position }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Access Information</h5>
+                                    <div class="info-section">
+                                        {% if profile.username %}
+                                        <div class="info-item">
+                                            <label>Username:</label>
+                                            <span>{{ profile.username }}</span>
+                                        </div>
+                                        {% endif %}
+                                        {% if profile.password %}
+                                        <div class="info-item">
+                                            <label>Password:</label>
+                                            <span class="password-field">••••••••</span>
+                                            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="togglePassword()">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                        {% if profile.notes %}
+                                        <div class="info-item">
+                                            <label>Notes:</label>
+                                            <div class="notes-content">{{ profile.notes }}</div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comparison Tab -->
+                        <div class="tab-pane fade" id="comparison" role="tabpanel">
+                            <div id="comparisonArea">
+                                <div class="text-center py-5">
+                                    <i class="fas fa-balance-scale fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No comparison data available</h5>
+                                    <p class="text-muted">Scrape live content first, then click "Compare" to see differences.</p>
+                                    <button class="btn btn-primary" onclick="compareProfile()">
+                                        <i class="fas fa-balance-scale me-2"></i>Compare Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Analytics Tab -->
+                        <div class="tab-pane fade" id="analytics" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Performance Metrics</h5>
+                                    <div class="metrics-grid">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{{ profile.profile_views or 0 }}</div>
+                                            <div class="metric-label">Total Views</div>
+                                        </div>
+                                        <div class="metric-card">
+                                            <div class="metric-value">{{ profile.contact_requests or 0 }}</div>
+                                            <div class="metric-label">Contact Requests</div>
+                                        </div>
+                                        <div class="metric-card">
+                                            <div class="metric-value">
+                                                {% if profile.profile_views and profile.contact_requests %}
+                                                {{ "%.1f"|format((profile.contact_requests / profile.profile_views) * 100) }}%
+                                                {% else %}
+                                                0%
+                                                {% endif %}
+                                            </div>
+                                            <div class="metric-label">Conversion Rate</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Profile Health</h5>
+                                    <div class="health-indicators">
+                                        <div class="health-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <span>Profile URL: {{ 'Active' if profile.profile_url else 'Missing' }}</span>
+                                        </div>
+                                        <div class="health-item">
+                                            <i class="fas fa-{{ 'check-circle text-success' if profile.username else 'times-circle text-danger' }} me-2"></i>
+                                            <span>Login Credentials: {{ 'Available' if profile.username else 'Missing' }}</span>
+                                        </div>
+                                        <div class="health-item">
+                                            <i class="fas fa-{{ 'check-circle text-success' if profile.last_checked else 'times-circle text-warning' }} me-2"></i>
+                                            <span>Last Checked: {{ profile.last_checked or 'Never' }}</span>
+                                        </div>
+                                        <div class="health-item">
+                                            <i class="fas fa-{{ 'check-circle text-success' if profile.ranking_position else 'times-circle text-warning' }} me-2"></i>
+                                            <span>Ranking Position: {{ profile.ranking_position or 'Unknown' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Profile Header Styles */
+.profile-header-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 15px;
+    color: white;
+}
+
+.profile-header-card .btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+}
+
+.profile-header-card .btn:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+}
+
+/* Info Section Styles */
+.info-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+}
+
+.info-item span {
+    color: #6c757d;
+}
+
+.password-field {
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.notes-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Live Content Styles */
+.live-content-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #28a745;
+}
+
+.live-content-item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.live-content-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.live-content-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.live-content-value {
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.live-content-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.live-content-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Comparison Styles */
+.comparison-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #ffc107;
+}
+
+.comparison-item {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.comparison-field {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.comparison-values {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.comparison-value {
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.comparison-value.live {
+    background: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.comparison-value.stored {
+    background: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.comparison-value-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.match-score {
+    text-align: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.match-score-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.match-score-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.metric-card {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #007bff;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Health Indicators */
+.health-indicators {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #17a2b8;
+}
+
+.health-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.health-item:last-child {
+    border-bottom: none;
+}
+
+.health-item i {
+    font-size: 1.25rem;
+}
+
+/* Loading States */
+.loading {
+    text-align: center;
+    padding: 2rem;
+}
+
+.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Profile Description Styles */
+.profile-description {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.description-content {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.description-content p {
+    margin: 0;
+    line-height: 1.6;
+    color: #495057;
+    font-size: 1rem;
+}
+
+/* Info Cards */
+.info-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.info-card i {
+    font-size: 1.1rem;
+}
+
+/* Enhanced Live Content Styles */
+.live-content-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.live-content-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.live-content-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.live-content-label i {
+    color: #007bff;
+    margin-right: 0.5rem;
+}
+
+.live-content-value {
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.live-content-badge {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.live-content-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+/* Additional Info Section */
+.additional-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #28a745;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .comparison-values {
+        grid-template-columns: 1fr;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .live-content-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+</style>
+
+<script>
+let liveData = null;
+let comparisonData = null;
+
+function scrapeProfile() {
+    // Check if this is an automatic scrape (no button clicked)
+    const isAutoScrape = !event || !event.target;
+    
+    let button = null;
+    let originalText = '';
+    
+    if (!isAutoScrape) {
+        button = event.target;
+        originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scraping...';
+        button.disabled = true;
+    }
+    
+    // Show loading state in the content area
+    const container = document.getElementById('liveContentArea');
+    if (isAutoScrape) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
+                <h5 class="text-muted">Scraping live profile content...</h5>
+                <p class="text-muted">Pulling the latest information from the directory site.</p>
+            </div>
+        `;
+    }
+    
+    fetch(`/api/scrape-profile/{{ profile.id }}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            if (isAutoScrape) {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Unable to scrape live content:</strong> ${data.error}
+                        <br><small class="text-muted">You can try again manually using the "Scrape Live Content" button.</small>
+                    </div>
+                `;
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } else {
+            liveData = data.live_data;
+            displayLiveContent(data.live_data);
+            if (!isAutoScrape) {
+                alert('Profile scraped successfully!');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (isAutoScrape) {
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Scraping failed:</strong> ${error.message}
+                    <br><small class="text-muted">You can try again manually using the "Scrape Live Content" button.</small>
+                </div>
+            `;
+        } else {
+            alert('Error scraping profile');
+        }
+    })
+    .finally(() => {
+        if (button) {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    });
+}
+
+function compareProfile() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Comparing...';
+    button.disabled = true;
+    
+    fetch(`/api/compare-profile/{{ profile.id }}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            comparisonData = data;
+            displayComparison(data);
+            alert('Comparison completed!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error comparing profile');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function displayLiveContent(data) {
+    const container = document.getElementById('liveContentArea');
+    
+    if (data.error) {
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Scraping Error:</strong> ${data.error}
+            </div>
+        `;
+        return;
+    }
+    
+    const content = `
+        <div class="live-content-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Live Profile Content</h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="scrapeProfile()">
+                        <i class="fas fa-sync me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="compareProfile()">
+                        <i class="fas fa-balance-scale me-1"></i>Compare
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Profile Description (Main Content) -->
+            ${data.bio ? `
+                <div class="profile-description mb-4">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-file-alt me-2"></i>Profile Description
+                    </h6>
+                    <div class="description-content">
+                        <p class="lead">${data.bio}</p>
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    ${data.therapist_name ? `
+                        <div class="live-content-item">
+                            <label class="live-content-label">
+                                <i class="fas fa-user me-1"></i>Therapist Name
+                            </label>
+                            <div class="live-content-value">${data.therapist_name}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.credentials ? `
+                        <div class="live-content-item">
+                            <label class="live-content-label">
+                                <i class="fas fa-certificate me-1"></i>Credentials
+                            </label>
+                            <div class="live-content-value">${data.credentials}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.contact_info && (data.contact_info.phone || data.contact_info.email) ? `
+                        <div class="live-content-item">
+                            <label class="live-content-label">
+                                <i class="fas fa-phone me-1"></i>Contact Information
+                            </label>
+                            <div class="live-content-value">
+                                ${data.contact_info.phone ? `<div><i class="fas fa-phone me-1"></i>${data.contact_info.phone}</div>` : ''}
+                                ${data.contact_info.email ? `<div><i class="fas fa-envelope me-1"></i>${data.contact_info.email}</div>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="col-md-6">
+                    ${data.specialties && data.specialties.length > 0 ? `
+                        <div class="live-content-item">
+                            <label class="live-content-label">
+                                <i class="fas fa-star me-1"></i>Specialties
+                            </label>
+                            <div class="live-content-list">
+                                ${data.specialties.map(specialty => `<span class="live-content-badge">${specialty}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.treatment_approaches && data.treatment_approaches.length > 0 ? `
+                        <div class="live-content-item">
+                            <label class="live-content-label">
+                                <i class="fas fa-heart me-1"></i>Treatment Approaches
+                            </label>
+                            <div class="live-content-list">
+                                ${data.treatment_approaches.map(approach => `<span class="live-content-badge">${approach}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.client_focus && data.client_focus.length > 0 ? `
+                        <div class="live-content-item">
+                            <label class="live-content-label">
+                                <i class="fas fa-users me-1"></i>Client Focus
+                            </label>
+                            <div class="live-content-list">
+                                ${data.client_focus.map(focus => `<span class="live-content-badge">${focus}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Additional Information -->
+            ${data.session_fees || data.sliding_scale || data.accepts_insurance ? `
+                <div class="additional-info mt-4">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Additional Information
+                    </h6>
+                    <div class="row">
+                        ${data.session_fees ? `
+                            <div class="col-md-4">
+                                <div class="info-card">
+                                    <i class="fas fa-dollar-sign text-success me-2"></i>
+                                    <strong>Session Fees:</strong> ${data.session_fees}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${data.sliding_scale ? `
+                            <div class="col-md-4">
+                                <div class="info-card">
+                                    <i class="fas fa-sliders-h text-info me-2"></i>
+                                    <strong>Sliding Scale:</strong> Available
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${data.accepts_insurance ? `
+                            <div class="col-md-4">
+                                <div class="info-card">
+                                    <i class="fas fa-shield-alt text-primary me-2"></i>
+                                    <strong>Insurance:</strong> Accepted
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="mt-4 pt-3 border-top">
+                <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    Last scraped: ${new Date(data.scraped_at * 1000).toLocaleString()}
+                    <span class="ms-3">
+                        <i class="fas fa-globe me-1"></i>
+                        Source: ${data.directory || 'Directory Site'}
+                    </span>
+                </small>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = content;
+}
+
+function displayComparison(data) {
+    const container = document.getElementById('comparisonArea');
+    
+    if (data.error) {
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Comparison Error:</strong> ${data.error}
+            </div>
+        `;
+        return;
+    }
+    
+    const comparison = data.comparison;
+    const liveData = data.live_data;
+    const storedData = data.stored_data;
+    
+    const content = `
+        <div class="comparison-section">
+            <div class="match-score">
+                <div class="match-score-value">${comparison.match_score.toFixed(1)}%</div>
+                <div class="match-score-label">Match Score</div>
+            </div>
+            
+            <h5 class="mb-3">Field Comparison</h5>
+            
+            ${comparison.differences.map(diff => `
+                <div class="comparison-item">
+                    <div class="comparison-field">${diff.field.replace('_', ' ').toUpperCase()}</div>
+                    <div class="comparison-values">
+                        <div class="comparison-value live">
+                            <div class="comparison-value-label">Live Content</div>
+                            <div>${diff.live_value || 'Not available'}</div>
+                        </div>
+                        <div class="comparison-value stored">
+                            <div class="comparison-value-label">Stored Data</div>
+                            <div>${diff.stored_value || 'Not available'}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+            
+            ${comparison.differences.length === 0 ? `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Perfect Match!</strong> Live content matches stored data.
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    container.innerHTML = content;
+}
+
+function togglePassword() {
+    const passwordField = document.querySelector('.password-field');
+    const button = event.target;
+    const icon = button.querySelector('i');
+    
+    if (passwordField.textContent === '••••••••') {
+        passwordField.textContent = '{{ profile.password }}';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        passwordField.textContent = '••••••••';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+// Auto-scrape on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Automatically scrape live content when the page loads
+    scrapeProfile();
+});
+</script>
+{% endblock %}

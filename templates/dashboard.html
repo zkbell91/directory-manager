@@ -1,0 +1,1203 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Directory Manager{% endblock %}
+
+{% block content %}
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h1 class="h2 mb-2 fw-bold text-primary">Dashboard</h1>
+                <p class="text-muted mb-0">Monitor your therapist directory coverage and manage profiles</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-primary btn-lg" onclick="batchSearchAll()">
+                    <i class="fas fa-search me-2"></i>Batch Search All
+                </button>
+                <div class="text-muted d-flex align-items-center">
+                    <i class="fas fa-clock me-2"></i>
+                    <span class="fw-medium">Last updated: Just now</span>
+                </div>
+            </div>
+        </div>
+
+<!-- Overview Cards -->
+<div class="row mb-5">
+    <div class="col-md-3 mb-4">
+        <div class="card metric-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-label mb-2">Total Therapists</div>
+                    <div class="metric-number">{{ total_therapists }}</div>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-light rounded-circle p-3">
+                        <i class="fas fa-user-md fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card metric-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-label mb-2">Total Directories</div>
+                    <div class="metric-number">{{ total_directories }}</div>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-light rounded-circle p-3">
+                        <i class="fas fa-globe fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card metric-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-label mb-2">Total Profiles</div>
+                    <div class="metric-number">{{ total_profiles }}</div>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-light rounded-circle p-3">
+                        <i class="fas fa-id-card fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card metric-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-label mb-2">Coverage</div>
+                    <div class="metric-number">{{ "%.1f"|format(coverage_percentage) }}%</div>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-light rounded-circle p-3">
+                        <i class="fas fa-chart-pie fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Coverage Matrix -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>Coverage Matrix
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success">Active</span>
+                        <span class="badge bg-warning">Pending</span>
+                        <span class="badge bg-danger">Missing</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if coverage_matrix %}
+                <div class="table-responsive">
+                    <table class="table table-hover coverage-matrix">
+                        <thead>
+                            <tr>
+                                <th>Therapist</th>
+                                {% for directory in directories %}
+                                <th class="text-center">{{ directory.name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for therapist_name, directory_data in coverage_matrix.items() %}
+                            <tr>
+                                <td class="therapist-name"><strong>{{ therapist_name }}</strong></td>
+                                {% for directory in directories %}
+                                <td class="text-center coverage-cell" 
+                                    data-therapist-name="{{ therapist_name }}"
+                                    data-directory-name="{{ directory.name }}">
+                                    {% set profile_info = directory_data.get(directory.name, {}) %}
+                                    {% set status = profile_info.get('status', 'not_found') %}
+                                    {% if status == 'active' %}
+                                        <div class="coverage-indicator has-profile" title="Click to view/edit profile">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span class="status-text">Active</span>
+                                        </div>
+                                    {% elif status == 'exists_unmanaged' %}
+                                        <div class="coverage-indicator exists-unmanaged" title="Profile exists but not managed - Click to claim">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <span class="status-text">Exists</span>
+                                        </div>
+                                    {% elif status == 'needs_claiming' %}
+                                        <div class="coverage-indicator needs-claiming" title="Profile needs to be claimed - Click to claim">
+                                            <i class="fas fa-hand-paper"></i>
+                                            <span class="status-text">Claim</span>
+                                        </div>
+                                    {% elif status == 'pending' %}
+                                        <div class="coverage-indicator pending" title="Profile pending - Click to view status">
+                                            <i class="fas fa-clock"></i>
+                                            <span class="status-text">Pending</span>
+                                        </div>
+                                    {% elif status == 'error' %}
+                                        <div class="coverage-indicator error" title="Error with profile - Click to retry">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <span class="status-text">Error</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="coverage-indicator no-profile" title="Click to add profile">
+                                            <i class="fas fa-plus-circle"></i>
+                                            <span class="status-text">Add</span>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No data available. Import your CSV files to get started.</p>
+                    <a href="{{ url_for('import_export') }}" class="btn btn-primary">
+                        <i class="fas fa-file-import me-2"></i>Import Data
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('therapists') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-md me-2"></i>Manage Therapists
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('directories') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-globe me-2"></i>Manage Directories
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('profiles') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-id-card me-2"></i>View Profiles
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('import_export') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-file-import me-2"></i>Import/Export
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Interactive Coverage Matrix
+    const coverageCells = document.querySelectorAll('.coverage-cell');
+    
+    coverageCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            const therapistName = this.getAttribute('data-therapist-name');
+            const directoryName = this.getAttribute('data-directory-name');
+            const hasProfile = this.querySelector('.has-profile');
+            
+            if (hasProfile) {
+                // Show profile management modal or redirect to profiles page with filters
+                showProfileModal(therapistName, directoryName);
+            } else {
+                // Show add profile modal
+                showAddProfileModal(therapistName, directoryName);
+            }
+        });
+        
+        // Add ripple effect on click
+        cell.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(0, 123, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            `;
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Add ripple animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .coverage-indicator {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 60px;
+            justify-content: center;
+        }
+        
+        .coverage-indicator.has-profile {
+            color: #198754;
+            background-color: #d1e7dd;
+            border: 2px solid #198754;
+        }
+        
+        .coverage-indicator.no-profile {
+            color: #6c757d;
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .coverage-indicator.exists-unmanaged {
+            color: #fd7e14;
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+        
+        .coverage-indicator.needs-claiming {
+            color: #0dcaf0;
+            background-color: #d1ecf1;
+            border: 2px solid #0dcaf0;
+        }
+        
+        .coverage-indicator.pending {
+            color: #6f42c1;
+            background-color: #e2e3f1;
+            border: 2px solid #6f42c1;
+        }
+        
+        .coverage-indicator.error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+        
+        .coverage-indicator:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .coverage-indicator i {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .coverage-indicator .status-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+    `;
+    document.head.appendChild(style);
+});
+
+function showProfileModal(therapistName, directoryName) {
+    // Create a beautiful modal for profile management
+    const modalHtml = `
+        <div class="modal fade" id="profileModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-light text-dark">
+                        <h5 class="modal-title">
+                            <i class="fas fa-id-card me-2"></i>
+                            Profile Management
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Therapist</h6>
+                                <p class="fw-bold">${therapistName}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Directory</h6>
+                                <p class="fw-bold">${directoryName}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" onclick="viewProfile('${therapistName}', '${directoryName}')">
+                                <i class="fas fa-eye me-2"></i>View Profile
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="editProfile('${therapistName}', '${directoryName}')">
+                                <i class="fas fa-edit me-2"></i>Edit Profile
+                            </button>
+                            <button class="btn btn-outline-info" onclick="updateProfile('${therapistName}', '${directoryName}')">
+                                <i class="fas fa-sync me-2"></i>Update Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('profileModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+    modal.show();
+}
+
+function showAddProfileModal(therapistName, directoryName) {
+    // Create a beautiful modal for adding profile
+    const modalHtml = `
+        <div class="modal fade" id="addProfileModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Add New Profile
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Therapist</h6>
+                                <p class="fw-bold">${therapistName}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Directory</h6>
+                                <p class="fw-bold">${directoryName}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success" onclick="createProfile('${therapistName}', '${directoryName}')">
+                                <i class="fas fa-plus me-2"></i>Create Profile
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="searchExistingProfile('${therapistName}', '${directoryName}')">
+                                <i class="fas fa-search me-2"></i>Search for Existing Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('addProfileModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('addProfileModal'));
+    modal.show();
+}
+
+function viewProfile(therapistName, directoryName) {
+    // Redirect to profiles page with filters
+    window.location.href = `/profiles?therapist=${encodeURIComponent(therapistName)}&directory=${encodeURIComponent(directoryName)}`;
+}
+
+function editProfile(therapistName, directoryName) {
+    // Redirect to profiles page with edit mode
+    window.location.href = `/profiles?therapist=${encodeURIComponent(therapistName)}&directory=${encodeURIComponent(directoryName)}&action=edit`;
+}
+
+function updateProfile(therapistName, directoryName) {
+    // Show update confirmation
+    if (confirm(`Update profile for ${therapistName} on ${directoryName}?`)) {
+        // Here you would implement the actual update logic
+        alert('Profile update initiated! (This would trigger the automation)');
+    }
+}
+
+function createProfile(therapistName, directoryName) {
+    // Redirect to profiles page with create mode
+    window.location.href = `/profiles?therapist=${encodeURIComponent(therapistName)}&directory=${encodeURIComponent(directoryName)}&action=create`;
+}
+
+function searchExistingProfile(therapistName, directoryName) {
+    // Auto-search using therapist data - no manual form needed!
+    showAutoSearchModal(therapistName, directoryName);
+}
+
+function showAutoSearchModal(therapistName, directoryName) {
+    const searchModalHtml = `
+        <div class="modal fade" id="searchProfileModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-search me-2"></i>
+                            Smart Profile Search
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Therapist</h6>
+                                <p class="fw-bold">${therapistName}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Directory</h6>
+                                <p class="fw-bold">${directoryName}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-robot me-2"></i>
+                            <strong>Smart Search:</strong> Using therapist's NPI, license numbers, location, and specialties to find existing profiles automatically.
+                        </div>
+                        
+                        <div id="searchLoading" class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Searching...</span>
+                            </div>
+                            <p class="mt-2">Searching directory for existing profiles...</p>
+                        </div>
+                        
+                        <div id="searchResults" class="mt-4" style="display: none;">
+                            <h6 class="mb-3">Search Results</h6>
+                            <div id="searchResultsContent">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('searchProfileModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', searchModalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('searchProfileModal'));
+    modal.show();
+    
+    // Auto-start search immediately
+    performAutoSearch(therapistName, directoryName);
+}
+
+function performAutoSearch(therapistName, directoryName) {
+    // Auto-search using all available therapist data
+    fetch('/api/auto-search-profile', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            therapist_name: therapistName,
+            directory_name: directoryName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('searchLoading').style.display = 'none';
+        document.getElementById('searchResults').style.display = 'block';
+        
+        if (data.error) {
+            document.getElementById('searchResultsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error: ${data.error}
+                </div>
+            `;
+            return;
+        }
+        
+        displaySmartSearchResults(data.results, data.therapist_info);
+    })
+    .catch(error => {
+        document.getElementById('searchLoading').style.display = 'none';
+        console.error('Error:', error);
+        document.getElementById('searchResultsContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error searching for profiles: ${error.message}
+            </div>
+        `;
+    });
+}
+
+function batchSearchAll() {
+    // Show batch search modal
+    const batchModalHtml = `
+        <div class="modal fade" id="batchSearchModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-search me-2"></i>
+                            Batch Search All Profiles
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-success">
+                            <i class="fas fa-magic me-2"></i>
+                            <strong>Batch Search:</strong> Automatically search all directories for all therapists using their NPI, license numbers, and other identifying information.
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>Search Options</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="searchByNPI" checked>
+                                    <label class="form-check-label" for="searchByNPI">Search by NPI Number</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="searchByLicense" checked>
+                                    <label class="form-check-label" for="searchByLicense">Search by License Numbers</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="searchByLocation" checked>
+                                    <label class="form-check-label" for="searchByLocation">Search by Location</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Directories to Search</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="searchPsychologyToday" checked>
+                                    <label class="form-check-label" for="searchPsychologyToday">Psychology Today</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="searchZencare" checked>
+                                    <label class="form-check-label" for="searchZencare">Zencare</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="searchTherapyDen" checked>
+                                    <label class="form-check-label" for="searchTherapyDen">TherapyDen</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg" onclick="startBatchSearch()">
+                                <i class="fas fa-rocket me-2"></i>Start Batch Search
+                            </button>
+                        </div>
+                        
+                        <div id="batchSearchProgress" class="mt-4" style="display: none;">
+                            <h6>Search Progress</h6>
+                            <div class="progress mb-3">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="batchSearchStatus" class="text-muted"></div>
+                        </div>
+                        
+                        <div id="batchSearchResults" class="mt-4" style="display: none;">
+                            <h6>Batch Search Results</h6>
+                            <div id="batchSearchResultsContent">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="closeBatchSearchAndRefresh()">
+                            <i class="fas fa-check me-1"></i>Done - Refresh Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('batchSearchModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', batchModalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('batchSearchModal'));
+    modal.show();
+}
+
+function startBatchSearch() {
+    const searchOptions = {
+        npi: document.getElementById('searchByNPI').checked,
+        license: document.getElementById('searchByLicense').checked,
+        location: document.getElementById('searchByLocation').checked
+    };
+    
+    const directories = [];
+    if (document.getElementById('searchPsychologyToday').checked) directories.push('Psychology Today');
+    if (document.getElementById('searchZencare').checked) directories.push('Zencare');
+    if (document.getElementById('searchTherapyDen').checked) directories.push('TherapyDen');
+    
+    // Show progress
+    document.getElementById('batchSearchProgress').style.display = 'block';
+    document.getElementById('batchSearchResults').style.display = 'none';
+    
+    // Start batch search
+    fetch('/api/batch-search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            search_options: searchOptions,
+            directories: directories
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        // Show results
+        document.getElementById('batchSearchProgress').style.display = 'none';
+        document.getElementById('batchSearchResults').style.display = 'block';
+        displayBatchSearchResults(data.results);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error during batch search');
+    });
+}
+
+function performAdvancedSearch(therapistName, directoryName) {
+    // Show advanced search options
+    alert('Advanced search would open directory-specific search tools and filters');
+}
+
+function simulateProfileSearch(therapistName, directoryName, searchParams) {
+    // This is a simulation - replace with actual directory scraping
+    const mockResults = [
+        {
+            name: therapistName,
+            title: "Licensed Mental Health Counselor",
+            location: "Jacksonville, FL",
+            specialties: ["OCD", "Anxiety", "Depression"],
+            profileUrl: "https://example.com/profile/123",
+            matchScore: 95,
+            verified: true
+        },
+        {
+            name: therapistName + " (Similar)",
+            title: "Therapist",
+            location: "Jacksonville, FL",
+            specialties: ["OCD", "Anxiety"],
+            profileUrl: "https://example.com/profile/456",
+            matchScore: 78,
+            verified: false
+        }
+    ];
+    
+    return mockResults;
+}
+
+function displaySearchResults(results) {
+    document.getElementById('searchLoading').style.display = 'none';
+    document.getElementById('searchResults').style.display = 'block';
+    
+    const resultsContainer = document.getElementById('searchResultsContent');
+    
+    if (results.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No existing profiles found. You may need to create a new profile.
+            </div>
+        `;
+        return;
+    }
+    
+    let resultsHtml = '';
+    results.forEach((result, index) => {
+        const matchColor = result.matchScore >= 90 ? 'success' : result.matchScore >= 70 ? 'warning' : 'secondary';
+        const verifiedBadge = result.verified ? '<span class="badge bg-success ms-2">Verified</span>' : '';
+        
+        resultsHtml += `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="card-title">${result.name}</h6>
+                            <p class="text-muted mb-2">${result.title} • ${result.location}</p>
+                            <div class="mb-2">
+                                ${result.specialties.map(s => `<span class="badge bg-light text-dark me-1">${s}</span>`).join('')}
+                            </div>
+                            <a href="${result.profileUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>View Profile
+                            </a>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-${matchColor}">${result.matchScore}% Match</span>
+                                ${verifiedBadge}
+                            </div>
+                            <div class="btn-group-vertical">
+                                <button class="btn btn-success btn-sm" onclick="confirmProfileMatch(${index}, 'managed_by_us')">
+                                    <i class="fas fa-check me-1"></i>We Manage This
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="confirmProfileMatch(${index}, 'exists_elsewhere')">
+                                    <i class="fas fa-external-link-alt me-1"></i>Therapist-Managed
+                                </button>
+                                <button class="btn btn-info btn-sm" onclick="confirmProfileMatch(${index}, 'needs_claiming')">
+                                    <i class="fas fa-hand-paper me-1"></i>Needs Claiming
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="confirmProfileMatch(${index}, 'incorrect_match')">
+                                    <i class="fas fa-times me-1"></i>Not the Right Profile
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsContainer.innerHTML = resultsHtml;
+}
+
+function displaySmartSearchResults(results, therapistInfo) {
+    const resultsContainer = document.getElementById('searchResultsContent');
+    
+    if (results.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No existing profiles found. You may need to create a new profile.
+            </div>
+        `;
+        return;
+    }
+    
+    let resultsHtml = '';
+    results.forEach((result, index) => {
+        const matchColor = result.match_score >= 95 ? 'success' : result.match_score >= 80 ? 'warning' : 'secondary';
+        const statusBadge = getStatusBadge(result.status);
+        const confidenceLevel = getConfidenceLevel(result.match_score);
+        
+        resultsHtml += `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="card-title">${result.name}</h6>
+                            <p class="text-muted mb-2">${result.title} • ${result.location}</p>
+                            <div class="mb-2">
+                                ${result.specialties.map(s => `<span class="badge bg-light text-dark me-1">${s}</span>`).join('')}
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <strong>NPI:</strong> ${result.npi || 'Not found'} • 
+                                    <strong>License:</strong> ${result.license || 'Not found'}
+                                </small>
+                            </div>
+                            <a href="${result.profile_url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>View Profile
+                            </a>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-${matchColor}">${result.match_score}% Match</span>
+                                ${statusBadge}
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">${confidenceLevel}</small>
+                            </div>
+                            <div class="btn-group-vertical">
+                                <button class="btn btn-success btn-sm" onclick="confirmProfileMatch(${index}, 'managed_by_us')">
+                                    <i class="fas fa-check me-1"></i>We Manage This
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="confirmProfileMatch(${index}, 'exists_elsewhere')">
+                                    <i class="fas fa-external-link-alt me-1"></i>Therapist-Managed
+                                </button>
+                                <button class="btn btn-info btn-sm" onclick="confirmProfileMatch(${index}, 'needs_claiming')">
+                                    <i class="fas fa-hand-paper me-1"></i>Needs Claiming
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="confirmProfileMatch(${index}, 'incorrect_match')">
+                                    <i class="fas fa-times me-1"></i>Not the Right Profile
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsContainer.innerHTML = resultsHtml;
+}
+
+function displayBatchSearchResults(results) {
+    const resultsContainer = document.getElementById('batchSearchResultsContent');
+    
+    let resultsHtml = '<div class="row">';
+    
+    // Group results by therapist
+    const therapistResults = {};
+    results.forEach(result => {
+        if (!therapistResults[result.therapist_name]) {
+            therapistResults[result.therapist_name] = [];
+        }
+        therapistResults[result.therapist_name].push(result);
+    });
+    
+    Object.keys(therapistResults).forEach(therapistName => {
+        const therapistResultsList = therapistResults[therapistName];
+        
+        resultsHtml += `
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">${therapistName}</h6>
+                    </div>
+                    <div class="card-body">
+                        ${therapistResultsList.map((result, index) => `
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>${result.directory_name}</strong>
+                                    <br><small class="text-muted">${result.status}</small>
+                                </div>
+                                <div>
+                                    ${getStatusBadge(result.status)}
+                                    ${result.profile_url ? `<a href="${result.profile_url}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">View</a>` : ''}
+                                </div>
+                            </div>
+                            ${result.profile_url ? `
+                                <div class="mt-2">
+                                    <div class="btn-group-vertical w-100">
+                                        <button class="btn btn-success btn-sm" onclick="confirmBatchProfileMatch('${result.therapist_name}', '${result.directory_name}', '${result.profile_url}', 'managed_by_us')">
+                                            <i class="fas fa-check me-1"></i>We Manage This
+                                        </button>
+                                        <button class="btn btn-warning btn-sm" onclick="confirmBatchProfileMatch('${result.therapist_name}', '${result.directory_name}', '${result.profile_url}', 'exists_elsewhere')">
+                                            <i class="fas fa-external-link-alt me-1"></i>Therapist-Managed
+                                        </button>
+                                        <button class="btn btn-info btn-sm" onclick="confirmBatchProfileMatch('${result.therapist_name}', '${result.directory_name}', '${result.profile_url}', 'needs_claiming')">
+                                            <i class="fas fa-hand-paper me-1"></i>Needs Claiming
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="confirmBatchProfileMatch('${result.therapist_name}', '${result.directory_name}', '${result.profile_url}', 'incorrect_match')">
+                                            <i class="fas fa-times me-1"></i>Not the Right Profile
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsHtml += '</div>';
+    resultsContainer.innerHTML = resultsHtml;
+}
+
+        function getStatusBadge(status) {
+            const statusMap = {
+                'active': '<span class="badge bg-success">Active</span>',
+                'exists_unmanaged': '<span class="badge bg-warning">Exists (Unmanaged)</span>',
+                'needs_claiming': '<span class="badge bg-info">Needs Claiming</span>',
+                'incorrect_match': '<span class="badge bg-danger">Incorrect Match</span>',
+                'blocked': '<span class="badge bg-danger">Search Blocked</span>',
+                'not_found': '<span class="badge bg-secondary">Not Found</span>',
+                'pending': '<span class="badge bg-secondary">Pending</span>'
+            };
+            return statusMap[status] || '<span class="badge bg-secondary">Unknown</span>';
+        }
+
+function getConfidenceLevel(score) {
+    if (score >= 95) return 'Very High Confidence';
+    if (score >= 80) return 'High Confidence';
+    if (score >= 60) return 'Medium Confidence';
+    return 'Low Confidence';
+}
+
+function confirmProfileMatch(resultIndex, managementStatus = 'managed_by_us') {
+            const statusMessages = {
+                'managed_by_us': 'We manage this profile',
+                'exists_elsewhere': 'Profile exists but is therapist-managed',
+                'needs_claiming': 'Profile needs to be claimed',
+                'incorrect_match': 'This is not the correct profile',
+                'blocked': 'Search was blocked by the directory'
+            };
+    
+    if (confirm(`${statusMessages[managementStatus]} - Confirm this is the correct profile?`)) {
+        console.log('Starting profile confirmation...');
+        
+        // Get the result data from the displayed results
+        // Find the specific result card within the search results container
+        const searchResultsContainer = document.getElementById('searchResultsContent');
+        const resultCards = searchResultsContainer.querySelectorAll('.card');
+        const resultCard = resultCards[resultIndex];
+        
+        if (!resultCard) {
+            alert('Error: Could not find result card');
+            console.log('Available cards:', resultCards.length, 'Requested index:', resultIndex);
+            return;
+        }
+        
+        const profileLink = resultCard.querySelector('a[href]');
+        if (!profileLink) {
+            alert('Error: Could not find profile link');
+            return;
+        }
+        
+        const profileUrl = profileLink.href;
+        const therapistName = document.querySelector('.modal-body .row .col-md-6:first-child p').textContent;
+        const directoryName = document.querySelector('.modal-body .row .col-md-6:last-child p').textContent;
+        
+        console.log('Profile data:', { therapistName, directoryName, profileUrl, managementStatus });
+        
+        // Make API call to confirm and save profile
+        fetch('/api/confirm-profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                therapist_name: therapistName,
+                directory_name: directoryName,
+                profile_url: profileUrl,
+                management_status: managementStatus
+            })
+        })
+        .then(response => {
+            console.log('API response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response data:', data);
+            
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Show success message
+            alert('Profile confirmed and saved successfully!');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('searchProfileModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Refresh the page to show updated coverage matrix
+            console.log('Refreshing page...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error confirming profile: ' + error.message);
+        });
+    }
+}
+
+function confirmBatchProfileMatch(therapistName, directoryName, profileUrl, managementStatus) {
+            const statusMessages = {
+                'managed_by_us': 'We manage this profile',
+                'exists_elsewhere': 'Profile exists but is therapist-managed',
+                'needs_claiming': 'Profile needs to be claimed',
+                'incorrect_match': 'This is not the correct profile',
+                'blocked': 'Search was blocked by the directory'
+            };
+    
+    if (confirm(`${statusMessages[managementStatus]} - Confirm this is the correct profile?`)) {
+        console.log('Starting batch profile confirmation...');
+        console.log('Profile data:', { therapistName, directoryName, profileUrl, managementStatus });
+        
+        // Make API call to confirm and save profile
+        fetch('/api/confirm-profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                therapist_name: therapistName,
+                directory_name: directoryName,
+                profile_url: profileUrl,
+                management_status: managementStatus
+            })
+        })
+        .then(response => {
+            console.log('API response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response data:', data);
+            
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Show success message
+            alert('Profile confirmed and saved successfully!');
+            
+            // Update the specific result in the batch search modal instead of closing it
+            updateBatchSearchResult(therapistName, directoryName, data.status);
+            
+            // Don't refresh the page - keep the modal open for more confirmations
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error confirming profile: ' + error.message);
+        });
+    }
+}
+
+function updateBatchSearchResult(therapistName, directoryName, newStatus) {
+    // Find the specific result in the batch search modal and update its display
+    const batchResultsContainer = document.getElementById('batchSearchResultsContent');
+    if (!batchResultsContainer) return;
+    
+    // Find all therapist cards
+    const therapistCards = batchResultsContainer.querySelectorAll('.card');
+    
+    therapistCards.forEach(card => {
+        const cardHeader = card.querySelector('.card-header h6');
+        if (cardHeader && cardHeader.textContent.trim() === therapistName) {
+            // Found the therapist card, now find the specific directory result
+            const directoryResults = card.querySelectorAll('.d-flex.justify-content-between');
+            
+            directoryResults.forEach(resultDiv => {
+                const directoryNameElement = resultDiv.querySelector('strong');
+                if (directoryNameElement && directoryNameElement.textContent.trim() === directoryName) {
+                    // Found the specific directory result, update its status
+                    const statusBadge = resultDiv.querySelector('.badge');
+                    const statusText = resultDiv.querySelector('small.text-muted');
+                    
+                    if (statusBadge) {
+                        // Update the status badge
+                        statusBadge.className = `badge bg-${getStatusBadgeClass(newStatus)}`;
+                        statusBadge.textContent = getStatusDisplayText(newStatus);
+                    }
+                    
+                    if (statusText) {
+                        statusText.textContent = newStatus.replace('_', ' ');
+                    }
+                    
+                    // Hide the confirmation buttons since this result has been processed
+                    const confirmationButtons = resultDiv.parentElement.querySelector('.btn-group-vertical');
+                    if (confirmationButtons) {
+                        confirmationButtons.style.display = 'none';
+                        
+                        // Add a "Processed" indicator
+                        const processedIndicator = document.createElement('div');
+                        processedIndicator.className = 'mt-2';
+                        processedIndicator.innerHTML = '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Processed</span>';
+                        resultDiv.parentElement.appendChild(processedIndicator);
+                    }
+                }
+            });
+        }
+    });
+}
+
+function getStatusBadgeClass(status) {
+    const statusMap = {
+        'active': 'success',
+        'exists_unmanaged': 'warning',
+        'needs_claiming': 'info',
+        'incorrect_match': 'danger',
+        'not_found': 'secondary',
+        'pending': 'primary'
+    };
+    return statusMap[status] || 'secondary';
+}
+
+function getStatusDisplayText(status) {
+    const statusMap = {
+        'active': 'Active',
+        'exists_unmanaged': 'Exists (Unmanaged)',
+        'needs_claiming': 'Needs Claiming',
+        'incorrect_match': 'Incorrect Match',
+        'not_found': 'Not Found',
+        'pending': 'Pending'
+    };
+    return statusMap[status] || 'Unknown';
+}
+
+function closeBatchSearchAndRefresh() {
+    // Close the batch search modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('batchSearchModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Refresh the dashboard to show updated coverage matrix
+    setTimeout(() => {
+        window.location.reload();
+    }, 300);
+}
+</script>
+{% endblock %}

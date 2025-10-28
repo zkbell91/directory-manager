@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+
+{% block title %}{{ directory.name }} - Directory Manager{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('directories') }}">Directories</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ directory.name }}</li>
+    </ol>
+</nav>
+
+<!-- Directory Header -->
+<div class="row mb-5">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center mb-4">
+            <div class="me-4">
+                <div class="bg-light rounded-circle p-4">
+                    <i class="fas fa-globe fa-3x text-primary"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="h2 mb-2 fw-bold text-primary">{{ directory.name }}</h1>
+                <p class="text-muted mb-0 fs-5">
+                    {% if directory.base_url %}
+                        <a href="{{ directory.base_url }}" target="_blank" class="text-decoration-none text-primary">
+                            {{ directory.base_url }}
+                            <i class="fas fa-external-link-alt ms-2"></i>
+                        </a>
+                    {% else %}
+                        <span class="text-muted">No URL configured</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <!-- Directory Type and Status -->
+        <div class="d-flex gap-2 mb-3">
+            {% if directory.is_premium %}
+                <span class="badge bg-warning fs-6">Premium Directory</span>
+            {% elif directory.is_free %}
+                <span class="badge bg-success fs-6">Free Directory</span>
+            {% else %}
+                <span class="badge bg-secondary fs-6">Unknown Type</span>
+            {% endif %}
+            
+            {% if directory.scraper_type == 'custom' %}
+                <span class="badge bg-info fs-6">Custom Scraper</span>
+            {% elif directory.scraper_type == 'generic' %}
+                <span class="badge bg-warning fs-6">Generic Scraper</span>
+            {% else %}
+                <span class="badge bg-secondary fs-6">No Scraper</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" onclick="configureScraper({{ directory.id }}, '{{ directory.name }}')">
+                <i class="fas fa-cog me-2"></i>Configure Scraper
+            </button>
+            <button class="btn btn-outline-primary" onclick="editDirectory({{ directory.id }})">
+                <i class="fas fa-edit me-2"></i>Edit Directory
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Directory Information Tabs -->
+<div class="row">
+    <div class="col-12">
+        <ul class="nav nav-tabs" id="directoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                    <i class="fas fa-info-circle me-2"></i>Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="scraper-tab" data-bs-toggle="tab" data-bs-target="#scraper" type="button" role="tab">
+                    <i class="fas fa-robot me-2"></i>Scraper Configuration
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profiles-tab" data-bs-toggle="tab" data-bs-target="#profiles" type="button" role="tab">
+                    <i class="fas fa-users me-2"></i>Therapist Profiles ({{ profiles|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                    <i class="fas fa-chart-bar me-2"></i>Analytics
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="directoryTabContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>Directory Information</h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ directory.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Base URL:</strong></td>
+                                <td>
+                                    {% if directory.base_url %}
+                                        <a href="{{ directory.base_url }}" target="_blank">{{ directory.base_url }}</a>
+                                    {% else %}
+                                        <span class="text-muted">Not configured</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Login URL:</strong></td>
+                                <td>
+                                    {% if directory.login_url %}
+                                        <a href="{{ directory.login_url }}" target="_blank">{{ directory.login_url }}</a>
+                                    {% else %}
+                                        <span class="text-muted">Not configured</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Profile URL Template:</strong></td>
+                                <td>
+                                    {% if directory.profile_url_template %}
+                                        <code>{{ directory.profile_url_template }}</code>
+                                    {% else %}
+                                        <span class="text-muted">Not configured</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type:</strong></td>
+                                <td>
+                                    {% if directory.is_premium %}
+                                        <span class="badge bg-warning">Premium</span>
+                                        {% if directory.premium_cost %}
+                                            - ${{ directory.premium_cost }}/month
+                                        {% endif %}
+                                    {% elif directory.is_free %}
+                                        <span class="badge bg-success">Free</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Scraper Status</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span><strong>Scraper Type:</strong></span>
+                                    {% if directory.scraper_type == 'custom' %}
+                                        <span class="badge bg-info">Custom</span>
+                                    {% elif directory.scraper_type == 'generic' %}
+                                        <span class="badge bg-warning">Generic</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">None</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if directory.search_url %}
+                                <div class="mb-2">
+                                    <strong>Search URL:</strong><br>
+                                    <code class="small">{{ directory.search_url }}</code>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="configureScraper({{ directory.id }}, '{{ directory.name }}')">
+                                        <i class="fas fa-cog me-1"></i>Configure
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="testScraper({{ directory.id }})">
+                                        <i class="fas fa-play me-1"></i>Test
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if directory.notes %}
+                        <h5 class="mt-4">Notes</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0">{{ directory.notes }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scraper Configuration Tab -->
+            <div class="tab-pane fade" id="scraper" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Scraper Configuration</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label"><strong>Scraper Type:</strong></label>
+                                            <p class="mb-0">
+                                                {% if directory.scraper_type == 'custom' %}
+                                                    <span class="badge bg-success">Custom Scraper</span>
+                                                    <small class="text-muted d-block">Sophisticated scraper with specific selectors</small>
+                                                {% elif directory.scraper_type == 'generic' %}
+                                                    <span class="badge bg-warning">Generic Scraper</span>
+                                                    <small class="text-muted d-block">Basic search functionality</small>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">No Scraper</span>
+                                                    <small class="text-muted d-block">Manual profile management only</small>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label"><strong>Search URL Template:</strong></label>
+                                            {% if directory.search_url %}
+                                                <code class="d-block">{{ directory.search_url }}</code>
+                                            {% else %}
+                                                <span class="text-muted">Not configured</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        {% if directory.scraper_type == 'custom' %}
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="text-primary mb-0">
+                                                <i class="fas fa-cogs me-2"></i>CSS Selectors
+                                            </h6>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-success me-2">Advanced</span>
+                                                <div class="progress" style="width: 100px; height: 8px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Element</th>
+                                                        <th>Selector</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><strong>Profile Container</strong></td>
+                                                        <td><code class="text-primary">{{ directory.profile_selector or 'Not set' }}</code></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Name</strong></td>
+                                                        <td><code class="text-primary">{{ directory.name_selector or 'Not set' }}</code></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Credentials</strong></td>
+                                                        <td><code class="text-primary">{{ directory.credentials_selector or 'Not set' }}</code></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Location</strong></td>
+                                                        <td><code class="text-primary">{{ directory.location_selector or 'Not set' }}</code></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Specialties</strong></td>
+                                                        <td><code class="text-primary">{{ directory.specialties_selector or 'Not set' }}</code></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Profile URL</strong></td>
+                                                        <td><code class="text-primary">{{ directory.profile_url_selector or 'Not set' }}</code></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% elif directory.scraper_type == 'generic' %}
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="text-warning mb-0">
+                                                <i class="fas fa-search me-2"></i>Generic Search
+                                            </h6>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-warning me-2">Basic</span>
+                                                <div class="progress" style="width: 100px; height: 8px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 40%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Generic scraper uses basic search functionality. Consider upgrading to a custom scraper for better results.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-primary" onclick="configureScraper({{ directory.id }}, '{{ directory.name }}')">
+                                        <i class="fas fa-cog me-2"></i>Configure Scraper
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="testScraper({{ directory.id }})">
+                                        <i class="fas fa-play me-2"></i>Test Scraper
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Therapist Profiles Tab -->
+            <div class="tab-pane fade" id="profiles" role="tabpanel">
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>Therapist Profiles ({{ profiles|length }})</h5>
+                        <button class="btn btn-primary" onclick="addProfile({{ directory.id }})">
+                            <i class="fas fa-plus me-2"></i>Add Profile
+                        </button>
+                    </div>
+                    
+                    {% if profiles %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Therapist</th>
+                                    <th>Profile URL</th>
+                                    <th>Status</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for profile in profiles %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ profile.therapist_name }}</strong><br>
+                                        <small class="text-muted">{{ profile.credentials }}</small>
+                                    </td>
+                                    <td>
+                                        {% if profile.profile_url %}
+                                            <a href="{{ profile.profile_url }}" target="_blank" class="text-decoration-none">
+                                                View Profile <i class="fas fa-external-link-alt ms-1"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No URL</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if profile.status == 'active' else 'warning' if profile.status == 'pending' else 'info' if profile.status == 'needs_claiming' else 'secondary' if profile.status == 'exists_unmanaged' else 'danger' if profile.status in ['not_found', 'error', 'incorrect_match', 'blocked'] else 'secondary' }}">
+                                            {{ profile.status.replace('_', ' ').title() if profile.status else 'Unknown' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if profile.last_updated %}
+                                            {% if profile.last_updated is string %}
+                                                {{ profile.last_updated }}
+                                            {% else %}
+                                                {{ profile.last_updated.strftime('%Y-%m-%d %H:%M') }}
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="viewProfile({{ profile.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" onclick="editProfile({{ profile.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No profiles found</h5>
+                        <p class="text-muted">Add therapist profiles for this directory.</p>
+                        <button class="btn btn-primary" onclick="addProfile({{ directory.id }})">
+                            <i class="fas fa-plus me-2"></i>Add First Profile
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Analytics Tab -->
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-primary">{{ profiles|length }}</h3>
+                                <p class="mb-0">Total Profiles</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ profiles|selectattr('status', 'equalto', 'active')|list|length }}</h3>
+                                <p class="mb-0">Active Profiles</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-warning">{{ profiles|selectattr('status', 'equalto', 'exists_unmanaged')|list|length }}</h3>
+                                <p class="mb-0">Unmanaged</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-info">{{ profiles|selectattr('status', 'equalto', 'needs_claiming')|list|length }}</h3>
+                                <p class="mb-0">Need Claiming</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Profile Status Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="statusChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include the scraper configuration modal from directories.html -->
+<div class="modal fade" id="scraperConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configure Scraper for <span id="scraperDirectoryName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="scraperDirectoryId">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="scraperType" class="form-label">Scraper Type</label>
+                            <select class="form-select" id="scraperType" onchange="toggleScraperFields()">
+                                <option value="generic">Generic (Default)</option>
+                                <option value="custom">Custom Scraper</option>
+                                <option value="none">No Scraper</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="searchUrl" class="form-label">Search URL Template</label>
+                            <input type="url" class="form-control" id="searchUrl" placeholder="https://example.com/search?q={query}&location={location}">
+                            <div class="form-text">Use {query}, {location}, {name} as placeholders</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="customScraperFields" style="display: none;">
+                    <h6 class="mb-3">CSS Selectors</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="profileSelector" class="form-label">Profile Container</label>
+                                <input type="text" class="form-control" id="profileSelector" placeholder=".profile-card, .therapist-card">
+                            </div>
+                            <div class="mb-3">
+                                <label for="nameSelector" class="form-label">Name Selector</label>
+                                <input type="text" class="form-control" id="nameSelector" placeholder="h3, .name, .therapist-name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="credentialsSelector" class="form-label">Credentials Selector</label>
+                                <input type="text" class="form-control" id="credentialsSelector" placeholder=".credentials, .title">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="locationSelector" class="form-label">Location Selector</label>
+                                <input type="text" class="form-control" id="locationSelector" placeholder=".location, .address">
+                            </div>
+                            <div class="mb-3">
+                                <label for="specialtiesSelector" class="form-label">Specialties Selector</label>
+                                <input type="text" class="form-control" id="specialtiesSelector" placeholder=".specialties, .tags">
+                            </div>
+                            <div class="mb-3">
+                                <label for="profileUrlSelector" class="form-label">Profile URL Selector</label>
+                                <input type="text" class="form-control" id="profileUrlSelector" placeholder="a[href*='profile'], .profile-link">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="testQuery" class="form-label">Test Query</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="testQuery" placeholder="Enter therapist name to test" value="Allison Gradzki">
+                        <button class="btn btn-outline-secondary" type="button" id="testScraperBtn" onclick="testScraper()">
+                            <i class="fas fa-play me-1"></i>Test Scraper
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="testResults"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveScraperConfig()">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Include all the scraper configuration functions from directories.html
+function configureScraper(directoryId, directoryName) {
+    document.getElementById('scraperDirectoryName').textContent = directoryName;
+    document.getElementById('scraperDirectoryId').value = directoryId;
+    loadScraperConfig(directoryId);
+    
+    const modal = new bootstrap.Modal(document.getElementById('scraperConfigModal'));
+    modal.show();
+}
+
+function loadScraperConfig(directoryId) {
+    // TODO: Load current scraper configuration from backend
+    document.getElementById('scraperType').value = '{{ directory.scraper_type }}';
+    document.getElementById('searchUrl').value = '{{ directory.search_url }}';
+    document.getElementById('profileSelector').value = '{{ directory.profile_selector }}';
+    document.getElementById('nameSelector').value = '{{ directory.name_selector }}';
+    document.getElementById('credentialsSelector').value = '{{ directory.credentials_selector }}';
+    document.getElementById('locationSelector').value = '{{ directory.location_selector }}';
+    document.getElementById('specialtiesSelector').value = '{{ directory.specialties_selector }}';
+    document.getElementById('profileUrlSelector').value = '{{ directory.profile_url_selector }}';
+}
+
+function saveScraperConfig() {
+    const directoryId = document.getElementById('scraperDirectoryId').value;
+    const scraperType = document.getElementById('scraperType').value;
+    
+    const config = {
+        scraper_type: scraperType,
+        search_url: document.getElementById('searchUrl').value,
+        profile_selector: document.getElementById('profileSelector').value,
+        name_selector: document.getElementById('nameSelector').value,
+        credentials_selector: document.getElementById('credentialsSelector').value,
+        location_selector: document.getElementById('locationSelector').value,
+        specialties_selector: document.getElementById('specialtiesSelector').value,
+        profile_url_selector: document.getElementById('profileUrlSelector').value
+    };
+    
+    fetch(`/api/directory/${directoryId}/scraper`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Scraper configuration saved successfully');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving scraper configuration');
+    });
+}
+
+function testScraper() {
+    const directoryId = document.getElementById('scraperDirectoryId').value;
+    const testQuery = document.getElementById('testQuery').value || 'Test Therapist';
+    
+    if (!testQuery) {
+        alert('Please enter a test query');
+        return;
+    }
+    
+    const testButton = document.getElementById('testScraperBtn');
+    const originalText = testButton.innerHTML;
+    testButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
+    testButton.disabled = true;
+    
+    fetch(`/api/directory/${directoryId}/test-scraper`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ test_query: testQuery })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Test failed: ' + data.error);
+        } else {
+            const resultsContainer = document.getElementById('testResults');
+            resultsContainer.innerHTML = `
+                <div class="alert alert-info">
+                    <h6>Test Results:</h6>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Results Found:</strong> ${data.results_count}</p>
+                    ${data.results_count > 0 ? `
+                        <div class="mt-2">
+                            <strong>Sample Results:</strong>
+                            <ul class="list-unstyled mt-1">
+                                ${data.sample_results.map(result => `
+                                    <li class="mb-1">
+                                        <strong>${result.name}</strong><br>
+                                        <small class="text-muted">${result.credentials} • ${result.location}</small><br>
+                                        <small><a href="${result.profile_url}" target="_blank">View Profile</a></small>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error testing scraper');
+    })
+    .finally(() => {
+        testButton.innerHTML = originalText;
+        testButton.disabled = false;
+    });
+}
+
+function toggleScraperFields() {
+    const scraperType = document.getElementById('scraperType').value;
+    const customFields = document.getElementById('customScraperFields');
+    
+    if (scraperType === 'custom') {
+        customFields.style.display = 'block';
+    } else {
+        customFields.style.display = 'none';
+    }
+}
+
+function editDirectory(directoryId) {
+    // TODO: Implement directory editing
+    alert('Directory editing not yet implemented');
+}
+
+function addProfile(directoryId) {
+    // TODO: Implement profile addition
+    alert('Profile addition not yet implemented');
+}
+
+function viewProfile(profileId) {
+    window.location.href = `/profile/${profileId}`;
+}
+
+function editProfile(profileId) {
+    // TODO: Implement profile editing
+    alert('Profile editing not yet implemented');
+}
+
+function testScraper(directoryId) {
+    // Open the scraper configuration modal and trigger test
+    configureScraper(directoryId, '{{ directory.name }}');
+    setTimeout(() => {
+        testScraper();
+    }, 500);
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize any charts or other components
+    console.log('Directory detail page loaded');
+});
+</script>
+{% endblock %}
