@@ -370,43 +370,49 @@ class DatabaseManager:
         
         if therapist_id and directory_id:
             cursor.execute('''
-                SELECT tp.*, t.name as therapist_name, d.name as directory_name
+                SELECT tp.*, t.name as therapist_name, COALESCE(d.name, 'Unknown Directory') as directory_name
                 FROM therapist_profiles tp
                 JOIN therapists t ON tp.therapist_id = t.id
-                JOIN directories d ON tp.directory_id = d.id
+                LEFT JOIN directories d ON tp.directory_id = d.id
                 WHERE tp.therapist_id = ? AND tp.directory_id = ?
             ''', (therapist_id, directory_id))
         elif therapist_id:
             cursor.execute('''
-                SELECT tp.*, t.name as therapist_name, d.name as directory_name
+                SELECT tp.*, t.name as therapist_name, COALESCE(d.name, 'Unknown Directory') as directory_name
                 FROM therapist_profiles tp
                 JOIN therapists t ON tp.therapist_id = t.id
-                JOIN directories d ON tp.directory_id = d.id
+                LEFT JOIN directories d ON tp.directory_id = d.id
                 WHERE tp.therapist_id = ?
             ''', (therapist_id,))
         elif directory_id:
             cursor.execute('''
-                SELECT tp.*, t.name as therapist_name, d.name as directory_name
+                SELECT tp.*, t.name as therapist_name, COALESCE(d.name, 'Unknown Directory') as directory_name
                 FROM therapist_profiles tp
                 JOIN therapists t ON tp.therapist_id = t.id
-                JOIN directories d ON tp.directory_id = d.id
+                LEFT JOIN directories d ON tp.directory_id = d.id
                 WHERE tp.directory_id = ?
             ''', (directory_id,))
         else:
             cursor.execute('''
-                SELECT tp.*, t.name as therapist_name, d.name as directory_name
+                SELECT tp.*, t.name as therapist_name, COALESCE(d.name, 'Unknown Directory') as directory_name
                 FROM therapist_profiles tp
                 JOIN therapists t ON tp.therapist_id = t.id
-                JOIN directories d ON tp.directory_id = d.id
+                LEFT JOIN directories d ON tp.directory_id = d.id
             ''')
         
         rows = cursor.fetchall()
         
+        # Get column names from the cursor description
+        column_names = [description[0] for description in cursor.description]
+        
         profiles = []
         for row in rows:
+            # Convert row to dictionary for easier access
+            row_dict = dict(zip(column_names, row))
+            
             # Use the stored status from the database
-            profile_url = row[3]
-            stored_status = row[6]
+            profile_url = row_dict.get('profile_url')
+            stored_status = row_dict.get('status')
             
             # Use the stored status, but mark as missing if no URL
             if profile_url and profile_url.strip():
@@ -415,24 +421,24 @@ class DatabaseManager:
                 actual_status = 'missing'
             
             profile = {
-                'id': row[0],
-                'therapist_id': row[1],
-                'directory_id': row[2],
-                'profile_url': row[3],
-                'username': row[4],
-                'password': row[5],
+                'id': row_dict.get('id'),
+                'therapist_id': row_dict.get('therapist_id'),
+                'directory_id': row_dict.get('directory_id'),
+                'profile_url': row_dict.get('profile_url'),
+                'username': row_dict.get('username'),
+                'password': row_dict.get('password'),
                 'status': actual_status,  # Use calculated status
                 'stored_status': stored_status,  # Keep original for reference
-                'last_updated': row[7],
-                'last_checked': row[8],
-                'ranking_position': row[9],
-                'profile_views': row[10],
-                'contact_requests': row[11],
-                'notes': row[12],
-                'created_at': row[13],
-                'updated_at': row[14],
-                'therapist_name': row[15],
-                'directory_name': row[16]
+                'last_updated': row_dict.get('last_updated'),
+                'last_checked': row_dict.get('last_checked'),
+                'ranking_position': row_dict.get('ranking_position'),
+                'profile_views': row_dict.get('profile_views'),
+                'contact_requests': row_dict.get('contact_requests'),
+                'notes': row_dict.get('notes'),
+                'created_at': row_dict.get('created_at'),
+                'updated_at': row_dict.get('updated_at'),
+                'therapist_name': row_dict.get('therapist_name') or 'Unknown Therapist',
+                'directory_name': row_dict.get('directory_name') or 'Unknown Directory'
             }
             profiles.append(profile)
         

@@ -227,6 +227,162 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Psychology Today Profile Management Section -->
+        {% if profile.directory_name == 'Psychology Today' %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-edit me-2"></i>
+                            Psychology Today Profile Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Profile Actions</h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" onclick="extractProfileDetails()">
+                                        <i class="fas fa-download me-2"></i>
+                                        Extract Profile Details
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="showUpdateModal()">
+                                        <i class="fas fa-edit me-2"></i>
+                                        Update Profile
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="showImageUploadModal()">
+                                        <i class="fas fa-image me-2"></i>
+                                        Upload Profile Image
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Login Credentials</h6>
+                                <div class="mb-3">
+                                    <label for="ptEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="ptEmail" placeholder="Enter Psychology Today email">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ptPassword" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="ptPassword" placeholder="Enter Psychology Today password">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Profile Details Display -->
+                        <div id="profileDetailsSection" class="mt-4" style="display: none;">
+                            <h6>Extracted Profile Details</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <strong>Name:</strong> <span id="extractedName"></span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Credentials:</strong> <span id="extractedCredentials"></span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Location:</strong> <span id="extractedLocation"></span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Phone:</strong> <span id="extractedPhone"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <strong>Website:</strong> <span id="extractedWebsite"></span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Specialties:</strong> <span id="extractedSpecialties"></span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Bio:</strong> <span id="extractedBio"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Psychology Today Update Modal -->
+<div class="modal fade" id="updateProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light text-dark">
+                <h5 class="modal-title">Update Psychology Today Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateProfileForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="updateBio" class="form-label">Bio</label>
+                                <textarea class="form-control" id="updateBio" rows="4" placeholder="Enter profile bio"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="updateLocation" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="updateLocation" placeholder="Enter location">
+                            </div>
+                            <div class="mb-3">
+                                <label for="updatePhone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="updatePhone" placeholder="Enter phone number">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="updateWebsite" class="form-label">Website</label>
+                                <input type="url" class="form-control" id="updateWebsite" placeholder="Enter website URL">
+                            </div>
+                            <div class="mb-3">
+                                <label for="updateSpecialties" class="form-label">Specialties</label>
+                                <input type="text" class="form-control" id="updateSpecialties" placeholder="Enter specialties (comma-separated)">
+                            </div>
+                            <div class="mb-3">
+                                <label for="updateCredentials" class="form-label">Credentials</label>
+                                <input type="text" class="form-control" id="updateCredentials" placeholder="Enter credentials">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateProfile()">Update Profile</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Upload Modal -->
+<div class="modal fade" id="imageUploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-light text-dark">
+                <h5 class="modal-title">Upload Profile Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="imageFile" class="form-label">Select Image</label>
+                    <input type="file" class="form-control" id="imageFile" accept="image/*">
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Supported formats: JPG, PNG, GIF. Maximum size: 5MB.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="uploadImage()">Upload Image</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -955,5 +1111,249 @@ document.addEventListener('DOMContentLoaded', function() {
     // Automatically scrape live content when the page loads
     scrapeProfile();
 });
+
+// Psychology Today Profile Management Functions
+function extractProfileDetails() {
+    const profileUrl = '{{ profile.profile_url }}';
+    
+    if (!profileUrl) {
+        alert('Profile URL is not available');
+        return;
+    }
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Extracting...';
+    button.disabled = true;
+    
+    fetch('/api/psychology-today/profile-details', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            profile_url: profileUrl
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayExtractedDetails(data.profile_details);
+            showAlert('Profile details extracted successfully!', 'success');
+        } else {
+            showAlert('Failed to extract profile details: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error extracting profile details: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function displayExtractedDetails(details) {
+    document.getElementById('extractedName').textContent = details.name || 'N/A';
+    document.getElementById('extractedCredentials').textContent = details.credentials || 'N/A';
+    document.getElementById('extractedLocation').textContent = details.location || 'N/A';
+    document.getElementById('extractedPhone').textContent = details.phone || 'N/A';
+    document.getElementById('extractedWebsite').textContent = details.website || 'N/A';
+    document.getElementById('extractedSpecialties').textContent = details.specialties ? details.specialties.join(', ') : 'N/A';
+    document.getElementById('extractedBio').textContent = details.bio ? details.bio.substring(0, 100) + '...' : 'N/A';
+    
+    // Show the details section
+    document.getElementById('profileDetailsSection').style.display = 'block';
+}
+
+function showUpdateModal() {
+    const email = document.getElementById('ptEmail').value;
+    const password = document.getElementById('ptPassword').value;
+    
+    if (!email || !password) {
+        showAlert('Please enter your Psychology Today login credentials first', 'warning');
+        return;
+    }
+    
+    // Pre-populate form with extracted details if available
+    const extractedName = document.getElementById('extractedName').textContent;
+    if (extractedName && extractedName !== 'N/A') {
+        document.getElementById('updateBio').value = document.getElementById('extractedBio').textContent;
+        document.getElementById('updateLocation').value = document.getElementById('extractedLocation').textContent;
+        document.getElementById('updatePhone').value = document.getElementById('extractedPhone').textContent;
+        document.getElementById('updateWebsite').value = document.getElementById('extractedWebsite').textContent;
+        document.getElementById('updateSpecialties').value = document.getElementById('extractedSpecialties').textContent;
+        document.getElementById('updateCredentials').value = document.getElementById('extractedCredentials').textContent;
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('updateProfileModal'));
+    modal.show();
+}
+
+function updateProfile() {
+    const email = document.getElementById('ptEmail').value;
+    const password = document.getElementById('ptPassword').value;
+    const profileUrl = '{{ profile.profile_url }}';
+    
+    if (!email || !password) {
+        showAlert('Please enter your Psychology Today login credentials', 'warning');
+        return;
+    }
+    
+    if (!profileUrl) {
+        showAlert('Profile URL is not available', 'danger');
+        return;
+    }
+    
+    const profileData = {
+        bio: document.getElementById('updateBio').value,
+        location: document.getElementById('updateLocation').value,
+        phone: document.getElementById('updatePhone').value,
+        website: document.getElementById('updateWebsite').value,
+        specialties: document.getElementById('updateSpecialties').value.split(',').map(s => s.trim()),
+        credentials: document.getElementById('updateCredentials').value
+    };
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+    button.disabled = true;
+    
+    fetch('/api/psychology-today/update-profile', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            profile_url: profileUrl,
+            login_credentials: {
+                email: email,
+                password: password
+            },
+            profile_data: profileData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Profile updated successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('updateProfileModal')).hide();
+        } else {
+            showAlert('Failed to update profile: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error updating profile: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showImageUploadModal() {
+    const email = document.getElementById('ptEmail').value;
+    const password = document.getElementById('ptPassword').value;
+    
+    if (!email || !password) {
+        showAlert('Please enter your Psychology Today login credentials first', 'warning');
+        return;
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('imageUploadModal'));
+    modal.show();
+}
+
+function uploadImage() {
+    const email = document.getElementById('ptEmail').value;
+    const password = document.getElementById('ptPassword').value;
+    const profileUrl = '{{ profile.profile_url }}';
+    const imageFile = document.getElementById('imageFile').files[0];
+    
+    if (!email || !password) {
+        showAlert('Please enter your Psychology Today login credentials', 'warning');
+        return;
+    }
+    
+    if (!profileUrl) {
+        showAlert('Profile URL is not available', 'danger');
+        return;
+    }
+    
+    if (!imageFile) {
+        showAlert('Please select an image file', 'warning');
+        return;
+    }
+    
+    // For now, we'll use a placeholder path since we can't upload files directly
+    // In a real implementation, you'd need to handle file upload to the server first
+    const imagePath = '/path/to/uploaded/image.jpg'; // This would be the actual uploaded file path
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+    button.disabled = true;
+    
+    fetch('/api/psychology-today/upload-image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            profile_url: profileUrl,
+            login_credentials: {
+                email: email,
+                password: password
+            },
+            image_path: imagePath
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Image uploaded successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('imageUploadModal')).hide();
+        } else {
+            showAlert('Failed to upload image: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error uploading image: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showAlert(message, type) {
+    // Create and show a Bootstrap alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the page
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %}

@@ -226,17 +226,23 @@ def therapist_detail(therapist_id):
         
         # Get therapist's profiles
         cursor.execute('''
-            SELECT tp.*, d.name as directory_name, d.base_url, d.is_premium
+            SELECT tp.*, COALESCE(d.name, 'Unknown Directory') as directory_name, COALESCE(d.base_url, '') as base_url, COALESCE(d.is_premium, 0) as is_premium
             FROM therapist_profiles tp
-            JOIN directories d ON tp.directory_id = d.id
+            LEFT JOIN directories d ON tp.directory_id = d.id
             WHERE tp.therapist_id = ?
-            ORDER BY d.name
+            ORDER BY COALESCE(d.name, 'Unknown Directory')
         ''', (therapist_id,))
+        # Get column names from the cursor description
+        column_names = [description[0] for description in cursor.description]
+        
         profiles = []
         for row in cursor.fetchall():
+            # Convert row to dictionary for easier access
+            row_dict = dict(zip(column_names, row))
+            
             # Determine actual status based on profile URL
-            profile_url = row[3]
-            stored_status = row[6]
+            profile_url = row_dict.get('profile_url')
+            stored_status = row_dict.get('status')
             
             # Only show as active if there's a valid profile URL
             if profile_url and profile_url.strip():
@@ -245,25 +251,25 @@ def therapist_detail(therapist_id):
                 actual_status = 'missing'
             
             profiles.append({
-                'id': row[0],
-                'therapist_id': row[1],
-                'directory_id': row[2],
-                'profile_url': row[3],
-                'username': row[4],
-                'password': row[5],
+                'id': row_dict.get('id'),
+                'therapist_id': row_dict.get('therapist_id'),
+                'directory_id': row_dict.get('directory_id'),
+                'profile_url': row_dict.get('profile_url'),
+                'username': row_dict.get('username'),
+                'password': row_dict.get('password'),
                 'status': actual_status,  # Use calculated status
                 'stored_status': stored_status,  # Keep original for reference
-                'last_updated': row[7],
-                'last_checked': row[8],
-                'ranking_position': row[9],
-                'profile_views': row[10] or 0,
-                'contact_requests': row[11] or 0,
-                'notes': row[12],
-                'created_at': row[13],
-                'updated_at': row[14],
-                'directory_name': row[15],
-                'base_url': row[16],
-                'is_premium': bool(row[17])
+                'last_updated': row_dict.get('last_updated'),
+                'last_checked': row_dict.get('last_checked'),
+                'ranking_position': row_dict.get('ranking_position'),
+                'profile_views': row_dict.get('profile_views') or 0,
+                'contact_requests': row_dict.get('contact_requests') or 0,
+                'notes': row_dict.get('notes'),
+                'created_at': row_dict.get('created_at'),
+                'updated_at': row_dict.get('updated_at'),
+                'directory_name': row_dict.get('directory_name') or 'Unknown Directory',
+                'base_url': row_dict.get('base_url') or '',
+                'is_premium': bool(row_dict.get('is_premium')) if row_dict.get('is_premium') is not None else False
             })
         
         # Get all directories for coverage analysis
@@ -966,10 +972,10 @@ def view_profile(profile_id):
         
         # Get profile information
         cursor.execute('''
-            SELECT tp.*, t.name as therapist_name, d.name as directory_name, d.base_url
+            SELECT tp.*, t.name as therapist_name, COALESCE(d.name, 'Unknown Directory') as directory_name, COALESCE(d.base_url, '') as base_url
             FROM therapist_profiles tp
             JOIN therapists t ON tp.therapist_id = t.id
-            JOIN directories d ON tp.directory_id = d.id
+            LEFT JOIN directories d ON tp.directory_id = d.id
             WHERE tp.id = ?
         ''', (profile_id,))
         
@@ -978,25 +984,29 @@ def view_profile(profile_id):
             flash('Profile not found', 'error')
             return redirect(url_for('profiles'))
         
+        # Get column names from the cursor description
+        column_names = [description[0] for description in cursor.description]
+        profile_dict = dict(zip(column_names, profile_row))
+        
         profile = {
-            'id': profile_row[0],
-            'therapist_id': profile_row[1],
-            'directory_id': profile_row[2],
-            'profile_url': profile_row[3],
-            'username': profile_row[4],
-            'password': profile_row[5],
-            'status': profile_row[6],
-            'last_updated': profile_row[7],
-            'last_checked': profile_row[8],
-            'ranking_position': profile_row[9],
-            'profile_views': profile_row[10] or 0,
-            'contact_requests': profile_row[11] or 0,
-            'notes': profile_row[12],
-            'created_at': profile_row[13],
-            'updated_at': profile_row[14],
-            'therapist_name': profile_row[15],
-            'directory_name': profile_row[16],
-            'base_url': profile_row[17]
+            'id': profile_dict.get('id'),
+            'therapist_id': profile_dict.get('therapist_id'),
+            'directory_id': profile_dict.get('directory_id'),
+            'profile_url': profile_dict.get('profile_url'),
+            'username': profile_dict.get('username'),
+            'password': profile_dict.get('password'),
+            'status': profile_dict.get('status'),
+            'last_updated': profile_dict.get('last_updated'),
+            'last_checked': profile_dict.get('last_checked'),
+            'ranking_position': profile_dict.get('ranking_position'),
+            'profile_views': profile_dict.get('profile_views') or 0,
+            'contact_requests': profile_dict.get('contact_requests') or 0,
+            'notes': profile_dict.get('notes'),
+            'created_at': profile_dict.get('created_at'),
+            'updated_at': profile_dict.get('updated_at'),
+            'therapist_name': profile_dict.get('therapist_name') or 'Unknown Therapist',
+            'directory_name': profile_dict.get('directory_name') or 'Unknown Directory',
+            'base_url': profile_dict.get('base_url') or ''
         }
         
         conn.close()
@@ -1717,6 +1727,196 @@ def perform_intelligent_search(directory, therapist_info):
                 'license_match': True
             }
         ]
+
+# Psychology Today Profile Management API Endpoints
+
+@app.route('/api/psychology-today/profile-details', methods=['POST'])
+def get_psychology_today_profile_details():
+    """Extract detailed profile information from Psychology Today profile page."""
+    try:
+        data = request.get_json()
+        profile_url = data.get('profile_url')
+        
+        if not profile_url:
+            return jsonify({'error': 'Profile URL is required'}), 400
+        
+        from profile_scraper import ProfileScraper
+        scraper = ProfileScraper()
+        
+        profile_details = scraper.get_psychology_today_profile_details(profile_url)
+        
+        if profile_details:
+            return jsonify({
+                'success': True,
+                'profile_details': profile_details
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to extract profile details'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/psychology-today/update-profile', methods=['POST'])
+def update_psychology_today_profile():
+    """Update a Psychology Today profile with new information."""
+    try:
+        data = request.get_json()
+        profile_url = data.get('profile_url')
+        login_credentials = data.get('login_credentials', {})
+        profile_data = data.get('profile_data', {})
+        
+        if not profile_url:
+            return jsonify({'error': 'Profile URL is required'}), 400
+        
+        if not login_credentials.get('email') or not login_credentials.get('password'):
+            return jsonify({'error': 'Login credentials (email and password) are required'}), 400
+        
+        from profile_scraper import ProfileScraper
+        scraper = ProfileScraper()
+        
+        result = scraper.update_psychology_today_profile(profile_url, login_credentials, profile_data)
+        
+        return jsonify(result)
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/psychology-today/update-personal-statement', methods=['POST'])
+def update_psychology_today_personal_statement():
+    """Update Psychology Today personal statement specifically."""
+    try:
+        data = request.get_json()
+        profile_url = data.get('profile_url')
+        login_credentials = data.get('login_credentials', {})
+        personal_statement = data.get('personal_statement', {})
+        
+        if not profile_url:
+            return jsonify({'error': 'Profile URL is required'}), 400
+        
+        if not login_credentials.get('email') or not login_credentials.get('password'):
+            return jsonify({'error': 'Login credentials (email and password) are required'}), 400
+        
+        if not personal_statement:
+            return jsonify({'error': 'Personal statement data is required'}), 400
+        
+        # Structure the data for the update function
+        profile_data = {
+            'personal_statement': personal_statement
+        }
+        
+        from profile_scraper import ProfileScraper
+        scraper = ProfileScraper()
+        
+        result = scraper.update_psychology_today_profile(profile_url, login_credentials, profile_data)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/psychology-today/upload-image', methods=['POST'])
+def upload_psychology_today_image():
+    """Upload a profile image to Psychology Today."""
+    try:
+        data = request.get_json()
+        profile_url = data.get('profile_url')
+        login_credentials = data.get('login_credentials', {})
+        image_path = data.get('image_path')
+        
+        if not profile_url:
+            return jsonify({'error': 'Profile URL is required'}), 400
+        
+        if not login_credentials.get('email') or not login_credentials.get('password'):
+            return jsonify({'error': 'Login credentials (email and password) are required'}), 400
+        
+        if not image_path:
+            return jsonify({'error': 'Image path is required'}), 400
+        
+        from profile_scraper import ProfileScraper
+        scraper = ProfileScraper()
+        
+        success = scraper.upload_profile_image(profile_url, login_credentials, image_path)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Image uploaded successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to upload image'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/psychology-today/verify-update', methods=['POST'])
+def verify_psychology_today_update():
+    """Verify if a Psychology Today profile update was successful."""
+    try:
+        data = request.get_json()
+        profile_url = data.get('profile_url')
+        expected_data = data.get('expected_data', {})
+        
+        if not profile_url:
+            return jsonify({'error': 'Profile URL is required'}), 400
+        
+        if not expected_data:
+            return jsonify({'error': 'Expected data is required for verification'}), 400
+        
+        from profile_scraper import ProfileScraper
+        scraper = ProfileScraper()
+        
+        verification_result = scraper.verify_psychology_today_update(profile_url, expected_data)
+        
+        return jsonify(verification_result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/psychology-today/bulk-update', methods=['POST'])
+def bulk_update_psychology_today_profiles():
+    """Bulk update multiple Psychology Today profiles."""
+    try:
+        data = request.get_json()
+        login_credentials = data.get('login_credentials', {})
+        profiles_data = data.get('profiles', [])
+        
+        if not login_credentials.get('email') or not login_credentials.get('password'):
+            return jsonify({'error': 'Login credentials (email and password) are required'}), 400
+        
+        if not profiles_data:
+            return jsonify({'error': 'Profiles data is required'}), 400
+        
+        from profile_scraper import ProfileScraper
+        scraper = ProfileScraper()
+        
+        results = []
+        for profile in profiles_data:
+            profile_url = profile.get('profile_url')
+            profile_data = profile.get('profile_data', {})
+            
+            if profile_url:
+                result = scraper.update_psychology_today_profile(profile_url, login_credentials, profile_data)
+                results.append({
+                    'profile_url': profile_url,
+                    'result': result,
+                    'success': result.get('success', False) if isinstance(result, dict) else result
+                })
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'total_processed': len(results),
+            'successful_updates': sum(1 for r in results if r['success'])
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist
